@@ -1,26 +1,54 @@
 @import "tailwindcss";
 
-:root {
-  --background: #ffffff;
-  --foreground: #171717;
+/* Tokens de Optimum Service AI — azul marino de la marca + estados reservados */
+@theme {
+  --color-marca-950: #061a30;
+  --color-marca-900: #0b2a4a;
+  --color-marca-800: #123a63;
+  --color-marca-700: #1b4d80;
+  --color-marca-600: #2563a3;
+  --color-marca-100: #e3ecf6;
+  --color-marca-50: #f2f6fb;
+
+  --color-fondo: #f4f6f9;
+  --color-superficie: #ffffff;
+  --color-borde: #e1e6ed;
+  --color-tinta: #0f1b2a;
+  --color-tinta-2: #4a5a6e;
+  --color-tinta-3: #7a8899;
+
+  --color-ok: #0f7a4b;
+  --color-ok-bg: #e6f5ee;
+  --color-aviso: #9a5b00;
+  --color-aviso-bg: #fdf3e1;
+  --color-critico: #b42318;
+  --color-critico-bg: #fdecea;
+  --color-info: #1b4d80;
+  --color-info-bg: #e3ecf6;
+
+  --font-sans: ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
 }
 
-@theme inline {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
-}
-
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
-  }
+html,
+body {
+  background: var(--color-fondo);
+  color: var(--color-tinta);
 }
 
 body {
-  background: var(--background);
-  color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+  font-family: var(--font-sans);
+  -webkit-tap-highlight-color: transparent;
+}
+
+/* Números alineados en tablas e indicadores */
+.tabular {
+  font-variant-numeric: tabular-nums;
+}
+
+@keyframes pulso {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.35; }
+}
+.pulso {
+  animation: pulso 1.6s ease-in-out infinite;
 }
