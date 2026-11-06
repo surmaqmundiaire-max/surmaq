@@ -48,6 +48,10 @@ export const TIPO_LABEL: Record<TipoTrabajo, string> = {
 
 export const perfiles: Perfil[] = [
   { id: "u-admin", nombre: "Fernando McBride", email: "fmcbride@surmaq.com", rol: "admin", ciudad: "Guayaquil", area: "Administración" },
+  // Nombres de ejemplo: se reemplazan por el personal real al cargar los usuarios
+  { id: "u-jefe", nombre: "Roberto Salazar", email: "rsalazar@surmaq.com", rol: "jefe", ciudad: "Guayaquil", area: "Mantenimiento", telefono: "0990000010" },
+  { id: "u-coord-gye", nombre: "Daniela Ortiz", email: "dortiz@surmaq.com", rol: "coordinador", ciudad: "Guayaquil", area: "Mantenimiento", telefono: "0990000011", ciudadesACargo: ["Guayaquil"] },
+  { id: "u-coord-uio", nombre: "Mateo Villacís", email: "mvillacis@surmaq.com", rol: "coordinador", ciudad: "Quito", area: "Mantenimiento", telefono: "0990000012", ciudadesACargo: ["Quito"] },
   { id: "u-jalvear", nombre: "Jorge Alvear", email: "jalvear@surmaq.com", rol: "tecnico", ciudad: "Guayaquil", area: "Mantenimiento", telefono: "0990000001" },
   { id: "u-jmerchan", nombre: "Jairo Merchán", email: "jmerchan@surmaq.com", rol: "tecnico", ciudad: "Guayaquil", area: "Mantenimiento", telefono: "0990000002" },
   { id: "u-hchicazawa", nombre: "Hideki Chicazawa", email: "hchicazawa@surmaq.com", rol: "tecnico", ciudad: "Guayaquil", area: "Mantenimiento", telefono: "0990000003" },
@@ -102,12 +106,12 @@ const base = { autoEmpresa: true, acompanantes: [] as string[], fotos: [] as Vis
 // Visitas de HOY
 const visitasHoy: Visita[] = [
   { ...base, id: "v-hoy-1", trabajoId: "t2781", tecnicoId: "u-jalvear", descripcion: "Instalación de secador OMI", programadaInicio: t(HOY, "12:00"), programadaFin: t(HOY, "14:00"), estado: "finalizada", checkinEn: t(HOY, "12:16"), checkoutEn: t(HOY, "14:31"), checkinDistanciaM: 35, comentarios: "Falta el punto de 220 V del secador", checklist: { ...vacia("instalacion", true), "Conexión eléctrica verificada": false }, firmadoPor: "Julio Alay" },
-  { ...base, id: "v-hoy-2", trabajoId: "t2781", tecnicoId: "u-jalvear", descripcion: "Conexión eléctrica secador (próximo chequeo)", programadaInicio: t("2026-11-09", "09:00"), programadaFin: t("2026-11-09", "11:00"), estado: "programada", checklist: vacia("instalacion") },
+  { ...base, id: "v-hoy-2", trabajoId: "t2781", tecnicoId: "u-jalvear", programadaPor: "u-jefe", descripcion: "Conexión eléctrica secador (próximo chequeo)", programadaInicio: t("2026-11-09", "09:00"), programadaFin: t("2026-11-09", "11:00"), estado: "programada", checklist: vacia("instalacion") },
   { ...base, id: "v-hoy-3", trabajoId: "t2779", tecnicoId: "u-jmerchan", descripcion: "Cambio de separador y aceite", programadaInicio: t(HOY, "08:30"), programadaFin: t(HOY, "12:30"), estado: "finalizada", checkinEn: t(HOY, "08:41"), checkoutEn: t(HOY, "12:55"), checkinDistanciaM: 60, acompanantes: ["u-hchicazawa"], checklist: vacia("mantenimiento", true) },
   { ...base, id: "v-hoy-4", trabajoId: "t2778", tecnicoId: "u-jmerchan", descripcion: "Tendido de tubería zona extrusión", programadaInicio: t(HOY, "14:00"), programadaFin: t(HOY, "17:30"), estado: "en_curso", checkinEn: t(HOY, "14:07"), checkinDistanciaM: 80, checklist: vacia("instalacion") },
-  { ...base, id: "v-hoy-5", trabajoId: "t2780", tecnicoId: "u-hchicazawa", descripcion: "Diagnóstico de ruido en cabezal", programadaInicio: t(HOY, "15:30"), programadaFin: t(HOY, "17:00"), estado: "programada", checklist: vacia("revision") },
+  { ...base, id: "v-hoy-5", trabajoId: "t2780", tecnicoId: "u-hchicazawa", programadaPor: "u-coord-gye", descripcion: "Diagnóstico de ruido en cabezal", programadaInicio: t(HOY, "15:30"), programadaFin: t(HOY, "17:00"), estado: "programada", checklist: vacia("revision") },
   { ...base, id: "v-hoy-6", trabajoId: "t2776", tecnicoId: "u-alopez", descripcion: "Mantenimiento preventivo — día 2", programadaInicio: t(HOY, "08:00"), programadaFin: t(HOY, "13:00"), estado: "en_curso", checkinEn: t(HOY, "08:05"), checkinDistanciaM: 2300, checklist: { ...vacia("mantenimiento"), "Cambio de aceite": true, "Cambio de filtro de aire": true } },
-  { ...base, id: "v-hoy-7", trabajoId: "t2777", tecnicoId: "u-aharo", descripcion: "Arranque y configuración de pistolas", programadaInicio: t(HOY, "10:00"), programadaFin: t(HOY, "13:00"), estado: "programada", checklist: vacia("arranque") },
+  { ...base, id: "v-hoy-7", trabajoId: "t2777", tecnicoId: "u-aharo", programadaPor: "u-coord-uio", vistaPorTecnico: true, descripcion: "Arranque y configuración de pistolas", programadaInicio: t(HOY, "10:00"), programadaFin: t(HOY, "13:00"), estado: "programada", checklist: vacia("arranque") },
   { ...base, id: "v-hoy-8", trabajoId: "t2775", tecnicoId: "u-hchicazawa", descripcion: "Ensamble de cabezal en taller", lugar: "en_oficina", autoEmpresa: false, programadaInicio: t(HOY, "09:00"), programadaFin: t(HOY, "12:00"), estado: "finalizada", checkinEn: t(HOY, "09:10"), checkoutEn: t(HOY, "11:48"), checklist: { ...vacia("ensamblaje", true), "Prueba final": false } },
 ];
 

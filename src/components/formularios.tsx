@@ -6,7 +6,8 @@ import { useMemo, useState } from "react";
 import { Check, Crosshair, Loader2, Search, Sparkles } from "lucide-react";
 import { useStore } from "@/lib/store";
 import { CHECKLISTS, LINEAS_PRODUCTO, TIPO_LABEL } from "@/lib/mock-data";
-import { equipo as getEquipo, cliente as getCliente, tecnicos } from "@/lib/selectors";
+import { equipo as getEquipo, cliente as getCliente, perfil, tecnicosProgramables } from "@/lib/selectors";
+import { Avatar } from "./ui";
 import { fechaCorta, toLocalIso } from "@/lib/format";
 import type { Equipo, LugarTrabajo, TipoTrabajo } from "@/lib/types";
 import { LectorPlaca, SlotFoto, aplicarLectura, type LecturaPlaca } from "./fotos-equipo";
@@ -123,6 +124,50 @@ const finDe = (fecha: string, hora: string, horas: number) => {
   d.setMinutes(d.getMinutes() + horas * 60);
   return toLocalIso(d);
 };
+
+/** Usuario que está programando (panel o técnico) */
+export function useProgramador(base: "admin" | "tecnico") {
+  const s = useStore();
+  return perfil(base === "tecnico" ? s.tecnicoActualId : s.usuarioActualId);
+}
+
+/** Elegir técnico con un toque. El técnico solo puede programarse a sí mismo. */
+function SelectorTecnico({ base, valor, onChange }: { base: "admin" | "tecnico"; valor: string; onChange: (id: string) => void }) {
+  const yo = useProgramador(base);
+  const opciones = tecnicosProgramables(yo);
+  if (base === "tecnico") {
+    return (
+      <div>
+        <p className="text-sm font-medium text-tinta-2">Técnico</p>
+        <p className="mt-1.5 flex min-h-12 items-center gap-2 rounded-xl bg-fondo px-3 text-sm"><Avatar nombre={yo.nombre} size={28} /> Para ti</p>
+      </div>
+    );
+  }
+  return (
+    <div>
+      <p className="text-sm font-medium text-tinta-2">Asignar a</p>
+      <div role="radiogroup" aria-label="Técnico" className="mt-1.5 flex flex-wrap gap-2">
+        {opciones.map((t) => (
+          <button
+            key={t.id}
+            type="button"
+            role="radio"
+            aria-checked={valor === t.id}
+            onClick={() => onChange(t.id)}
+            className={cx(
+              "inline-flex min-h-12 items-center gap-2 rounded-full border py-1 pr-4 pl-1 text-sm font-medium transition-colors",
+              valor === t.id ? "border-marca-800 bg-marca-800 text-white" : "border-borde bg-superficie hover:bg-fondo",
+            )}
+          >
+            <Avatar nombre={t.nombre} size={34} />
+            <span className="text-left leading-tight">{t.nombre}<span className={cx("block text-xs", valor === t.id ? "text-marca-100" : "text-tinta-3")}>{t.ciudad}</span></span>
+          </button>
+        ))}
+      </div>
+      {yo.ciudadesACargo?.length ? <p className="mt-1 text-xs text-tinta-3">Ves los técnicos de {yo.ciudadesACargo.join(", ")}.</p> : null}
+    </div>
+  );
+}
 
 // ---------- Empresa ----------
 export function FormCliente({ onGuardado }: { onGuardado: (id: string) => void }) {
@@ -313,7 +358,7 @@ export function FormEquipo({ clienteInicial, onGuardado }: { clienteInicial?: st
 }
 
 // ---------- Mantenimiento ----------
-export function FormMantenimiento({ equipoInicial, base, onGuardado }: { equipoInicial?: string; base: "admin" | "tecnico"; onGuardado: (id: string) => void }) {
+export function FormMantenimiento({ equipoInicial, tecnicoInicial, base, onGuardado }: { equipoInicial?: string; tecnicoInicial?: string; base: "admin" | "tecnico"; onGuardado: (id: string) => void }) {
   const s = useStore();
   const aviso = useAviso();
   const [equipoId, setEquipoId] = useState(equipoInicial ?? "");
@@ -322,13 +367,15 @@ export function FormMantenimiento({ equipoInicial, base, onGuardado }: { equipoI
   const [titulo, setTitulo] = useState("");
   const e = equipoId ? getEquipo(equipoId) : undefined;
   const responsable = e ? getCliente(e.clienteId).responsableId : s.tecnicoActualId;
-  const [asignado, setAsignado] = useState(base === "tecnico" ? s.tecnicoActualId : "");
+  const yo = useProgramador(base);
+  const programables = tecnicosProgramables(yo);
+  const [asignado, setAsignado] = useState(base === "tecnico" ? s.tecnicoActualId : tecnicoInicial ?? "");
   const [lugar, setLugar] = useState<LugarTrabajo>("en_cliente");
   const [fIni, hIni] = useInicioSugerido();
   const [fecha, setFecha] = useState(fIni);
   const [horaIni, setHoraIni] = useState(hIni);
   const [dur, setDur] = useState("2");
-  const tecnicoFinal = asignado || responsable;
+  const tecnicoFinal = asignado || (programables.some((t) => t.id === responsable) ? responsable : programables[0]?.id ?? responsable);
   const tituloFinal = titulo.trim() || (e ? `${TIPO_LABEL[tipo]} de ${e.nombre}` : "");
   const eqFiltrados = s.equipos.filter((x) => norm(`${x.nombre} ${x.marca} ${x.serie} ${getCliente(x.clienteId).razonSocial}`).includes(norm(qEq))).slice(0, 6);
 
@@ -389,11 +436,7 @@ export function FormMantenimiento({ equipoInicial, base, onGuardado }: { equipoI
           <input value={titulo} onChange={(ev) => setTitulo(ev.target.value)} placeholder={tituloFinal || "Describe el mantenimiento"} className={claseCampo} />
         </Campo>
         <div className="grid gap-4 sm:grid-cols-2">
-          <Campo label="Técnico asignado">
-            <select value={tecnicoFinal} onChange={(ev) => setAsignado(ev.target.value)} className={claseCampo}>
-              {tecnicos().map((t) => <option key={t.id} value={t.id}>{t.nombre} · {t.ciudad}</option>)}
-            </select>
-          </Campo>
+          <div className="sm:col-span-2"><SelectorTecnico base={base} valor={tecnicoFinal} onChange={setAsignado} /></div>
           <div>
             <p className="text-sm font-medium text-tinta-2">Lugar</p>
             <Chips etiqueta="Lugar" opciones={[["en_cliente", "En planta del cliente"], ["en_oficina", "En oficina / taller"]]} valor={lugar} onChange={setLugar} />
@@ -416,6 +459,8 @@ export function FormMantenimiento({ equipoInicial, base, onGuardado }: { equipoI
           s.agregarVisita({
             trabajoId: id,
             tecnicoId: tecnicoFinal,
+            programadaPor: yo.id,
+            vistaPorTecnico: yo.id === tecnicoFinal,
             descripcion: tituloFinal,
             lugar,
             programadaInicio: `${fecha}T${horaIni}:00`,
@@ -435,13 +480,14 @@ export function FormMantenimiento({ equipoInicial, base, onGuardado }: { equipoI
 }
 
 // ---------- Tarea ----------
-export function FormTarea({ trabajoId, onGuardado, onCancelar }: { trabajoId: string; onGuardado: (id: string) => void; onCancelar?: () => void }) {
+export function FormTarea({ trabajoId, base, tecnicoInicial, onGuardado, onCancelar }: { trabajoId: string; base: "admin" | "tecnico"; tecnicoInicial?: string; onGuardado: (id: string) => void; onCancelar?: () => void }) {
   const s = useStore();
   const t = s.trabajos.find((x) => x.id === trabajoId)!;
   const aviso = useAviso();
   const [fIni, hIni] = useInicioSugerido();
   const [desc, setDesc] = useState("");
-  const [tecnico, setTecnico] = useState(t.asignadoId);
+  const yo = useProgramador(base);
+  const [tecnico, setTecnico] = useState(base === "tecnico" ? yo.id : tecnicoInicial ?? t.asignadoId);
   const [fecha, setFecha] = useState(fIni);
   const [horaIni, setHoraIni] = useState(hIni);
   const [dur, setDur] = useState("2");
@@ -452,11 +498,7 @@ export function FormTarea({ trabajoId, onGuardado, onCancelar }: { trabajoId: st
         <Chips etiqueta="Tareas frecuentes" opciones={rapidas} valor={rapidas.some(([k]) => k === desc) ? desc : ""} onChange={setDesc} />
         <input value={desc} onChange={(e) => setDesc(e.target.value)} placeholder="O escribe la tarea" className={cx(claseCampo, "mt-2")} />
       </Campo>
-      <Campo label="Técnico">
-        <select value={tecnico} onChange={(e) => setTecnico(e.target.value)} className={claseCampo}>
-          {tecnicos().map((x) => <option key={x.id} value={x.id}>{x.nombre} · {x.ciudad}</option>)}
-        </select>
-      </Campo>
+      <SelectorTecnico base={base} valor={tecnico} onChange={setTecnico} />
       <Programacion fecha={fecha} setFecha={setFecha} horaIni={horaIni} setHoraIni={setHoraIni} dur={dur} setDur={setDur} />
       <div className="grid grid-cols-[auto_1fr] gap-2 pt-2">
         {onCancelar ? <button type="button" onClick={onCancelar} className="min-h-12 rounded-xl border border-borde bg-superficie px-4 font-semibold">Cancelar</button> : <span />}
@@ -464,11 +506,13 @@ export function FormTarea({ trabajoId, onGuardado, onCancelar }: { trabajoId: st
           type="button"
           disabled={!desc.trim()}
           onClick={() => {
-            aviso(`Tarea agendada · ${fechaCorta(fecha)} a las ${horaIni}`);
+            aviso(tecnico === yo.id ? `Tarea agendada · ${fechaCorta(fecha)} a las ${horaIni}` : `Tarea programada para ${perfil(tecnico).nombre} · ${fechaCorta(fecha)} ${horaIni}`);
             onGuardado(
               s.agregarVisita({
                 trabajoId,
                 tecnicoId: tecnico,
+                programadaPor: yo.id,
+                vistaPorTecnico: yo.id === tecnico,
                 descripcion: desc.trim(),
                 lugar: t.lugar,
                 programadaInicio: `${fecha}T${horaIni}:00`,

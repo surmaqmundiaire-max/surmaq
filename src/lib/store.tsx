@@ -4,7 +4,7 @@
 // estas acciones se reemplazan por llamadas a la base de datos.
 import { createContext, useCallback, useContext, useEffect, useMemo, useState } from "react";
 import * as mock from "./mock-data";
-import type { Cliente, Equipo, Pendiente, Trabajo, Visita } from "./types";
+import type { Cliente, Equipo, Pendiente, Perfil, Trabajo, Visita } from "./types";
 import { registro } from "./selectors";
 import { toLocalIso } from "./format";
 
@@ -14,7 +14,10 @@ interface Estado {
   trabajos: Trabajo[];
   equipos: Equipo[];
   clientes: Cliente[];
+  perfiles: Perfil[];
   tecnicoActualId: string;
+  /** Usuario con sesión iniciada en el panel (administrador, jefe o coordinador) */
+  usuarioActualId: string;
 }
 
 const inicial = (): Estado => ({
@@ -23,10 +26,12 @@ const inicial = (): Estado => ({
   trabajos: mock.trabajos,
   equipos: mock.equipos,
   clientes: mock.clientes,
+  perfiles: mock.perfiles,
   tecnicoActualId: "u-hchicazawa",
+  usuarioActualId: "u-admin",
 });
 
-const KEY = "optimum-maqueta-v3";
+const KEY = "optimum-maqueta-v4";
 
 function useAcciones(set: React.Dispatch<React.SetStateAction<Estado>>, ahora: () => string) {
   const patchVisita = useCallback(
@@ -41,6 +46,15 @@ function useAcciones(set: React.Dispatch<React.SetStateAction<Estado>>, ahora: (
   return useMemo(
     () => ({
       setTecnicoActual: (id: string) => set((s) => ({ ...s, tecnicoActualId: id })),
+      setUsuarioActual: (id: string) => set((s) => ({ ...s, usuarioActualId: id })),
+      agregarPerfil: (p: Omit<Perfil, "id">) => {
+        const id = `u-${Date.now()}`;
+        set((s) => ({ ...s, perfiles: [...s.perfiles, { ...p, id, activo: true }] }));
+        return id;
+      },
+      actualizarPerfil: (id: string, cambios: Partial<Perfil>) =>
+        set((s) => ({ ...s, perfiles: s.perfiles.map((p) => (p.id === id ? { ...p, ...cambios } : p)) })),
+      marcarVista: (id: string) => patchVisita(id, { vistaPorTecnico: true }),
       iniciarVisita: (id: string, distanciaM: number) =>
         patchVisita(id, { estado: "en_curso", checkinEn: ahora(), checkinDistanciaM: distanciaM }),
       /** Deshace una entrada marcada por error (vuelve a «programada»). */
@@ -155,6 +169,7 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
   const acciones = useAcciones(setEstado, ahora);
   registro.equipos = estado.equipos; // los selectores leen los datos vigentes
   registro.clientes = estado.clientes;
+  registro.perfiles = estado.perfiles;
   return <StoreCtx.Provider value={{ ...estado, ...acciones, ahora: ahoraStr }}>{children}</StoreCtx.Provider>;
 }
 

@@ -1,14 +1,14 @@
 "use client";
 
 import Link from "next/link";
-import { use, useMemo, useRef, useState } from "react";
+import { use, useEffect, useMemo, useRef, useState } from "react";
 import {
   ArrowLeft, Camera, Car, Check, CheckCircle2, ChevronRight, History, Loader2, MapPin, Mic, MicOff,
   ListChecks, Navigation, NotebookPen, Phone, Plus, Sparkles, Timer, Trash2, Users, X, type LucideIcon,
 } from "lucide-react";
 import { ChipTipo, IconoTipo } from "@/components/visual";
 import { useStore } from "@/lib/store";
-import { contexto, distanciaM, horasVisita, perfil, tecnicos, UMBRAL_DISTANCIA_M } from "@/lib/selectors";
+import { contexto, distanciaM, horasVisita, perfil, ROL_LABEL, tecnicos, UMBRAL_DISTANCIA_M } from "@/lib/selectors";
 import { CHECKLISTS, TIPO_LABEL } from "@/lib/mock-data";
 import { duracion, fechaCorta, hora, metros } from "@/lib/format";
 import { cx } from "@/components/ui";
@@ -32,6 +32,11 @@ export default function VisitaPage({ params }: { params: Promise<{ id: string }>
   const v = s.visitas.find((x) => x.id === id);
   const [paso, setPaso] = useState<Paso>("checklist");
   const [cerrando, setCerrando] = useState(false);
+  // Al abrir una tarea asignada por otra persona, queda como vista
+  const sinVer = !!v && !v.vistaPorTecnico && v.tecnicoId === s.tecnicoActualId;
+  useEffect(() => {
+    if (sinVer) s.marcarVista(id);
+  }, [sinVer, id, s]);
 
   if (!v) {
     return (
@@ -127,6 +132,9 @@ function Llegada({ id }: { id: string }) {
             <p className="mt-1 text-sm text-tinta-2 tabular">{fechaCorta(v!.programadaInicio)} · {hora(v!.programadaInicio)} – {hora(v!.programadaFin)}</p>
             <p className="mt-2 flex items-start gap-1.5 text-sm text-tinta-2"><MapPin size={16} className="mt-0.5 shrink-0" /> {cliente.direccion}, {cliente.ciudad}</p>
             <p className="mt-1 text-sm text-tinta-2">Contacto: <span className="font-medium text-tinta">{cliente.contacto.nombre}</span></p>
+            {v.programadaPor && v.programadaPor !== v.tecnicoId && (
+              <p className="mt-2 text-sm text-tinta-2">Asignada por <span className="font-medium text-tinta">{perfil(v.programadaPor).nombre}</span> · {ROL_LABEL[perfil(v.programadaPor).rol]}</p>
+            )}
           </section>
 
           {pendientesTrabajo.length > 0 && (

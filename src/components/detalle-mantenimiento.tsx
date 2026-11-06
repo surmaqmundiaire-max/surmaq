@@ -2,9 +2,9 @@
 
 import Link from "next/link";
 import { useState } from "react";
-import { CalendarPlus, Camera, Car, Check, ChevronRight, Clock3, MapPin, PenLine, Users } from "lucide-react";
+import { CalendarPlus, UserCheck, Camera, Car, Check, ChevronRight, Clock3, MapPin, PenLine, Users } from "lucide-react";
 import { useStore } from "@/lib/store";
-import { avanceTrabajo, contexto, horasVisita, perfil, UMBRAL_DISTANCIA_M } from "@/lib/selectors";
+import { avanceTrabajo, contexto, horasVisita, perfil, ROL_LABEL, UMBRAL_DISTANCIA_M } from "@/lib/selectors";
 import { duracion, fechaCorta, fechaLarga, hora, metros } from "@/lib/format";
 import { Avatar, Badge, Barra, EstadoTrabajoBadge, EstadoVisitaBadge, Vacio, cx } from "./ui";
 import { Migas, rutas, type Base } from "./migas";
@@ -94,7 +94,7 @@ export function DetalleMantenimiento({ id, base }: { id: string; base: Base }) {
         {agendando && (
           <div className="mb-4 rounded-2xl border border-marca-600/30 bg-superficie p-4">
             <h3 className="mb-3 font-semibold">Nueva tarea en este mantenimiento</h3>
-            <FormTarea trabajoId={id} onGuardado={() => setAgendando(false)} onCancelar={() => setAgendando(false)} />
+            <FormTarea trabajoId={id} base={base} onGuardado={() => setAgendando(false)} onCancelar={() => setAgendando(false)} />
           </div>
         )}
         <ol className="space-y-3">
@@ -133,6 +133,7 @@ export function DetalleMantenimiento({ id, base }: { id: string; base: Base }) {
                   <Badge icono={<Camera size={12} />}>{v.fotos.length} fotos</Badge>
                   {v.autoEmpresa && <Badge icono={<Car size={12} />}>Auto de la empresa</Badge>}
                   {v.acompanantes.length > 0 && <Badge icono={<Users size={12} />}>Con {v.acompanantes.map((a) => perfil(a).nombre.split(" ")[0]).join(", ")}</Badge>}
+                  {v.programadaPor && v.programadaPor !== v.tecnicoId && <Badge icono={<UserCheck size={12} />}>Asignada por {perfil(v.programadaPor).nombre} · {ROL_LABEL[perfil(v.programadaPor).rol]}</Badge>}
                   {v.salidaCorregida && <Badge tono="aviso" icono={<Clock3 size={12} />}>Salida registrada después</Badge>}
                   {v.firmadoPor && v.estado === "finalizada" && <Badge icono={<PenLine size={12} />}>Recibió {v.firmadoPor}</Badge>}
                 </p>

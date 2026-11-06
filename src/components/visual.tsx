@@ -1,9 +1,10 @@
 // Sistema visual de reconocimiento rápido: color + ícono por tipo de trabajo y por línea de equipo.
 import {
-  Box, Building2, Cog, HardHat, Cpu, Cylinder, Fan, Gauge, PackagePlus, Paintbrush, Power, ScanSearch, Snowflake, SprayCan, Waypoints, Wrench,
+  Box, Building2, ClipboardList, Cog, Crown, HardHat, ShieldCheck, Cpu, Cylinder, Fan, Gauge, PackagePlus, Paintbrush, Power, ScanSearch, Snowflake, SprayCan, Waypoints, Wrench,
   type LucideIcon,
 } from "lucide-react";
-import type { TipoTrabajo } from "@/lib/types";
+import type { Rol, TipoTrabajo } from "@/lib/types";
+import { ROL_LABEL } from "@/lib/selectors";
 import { TIPO_LABEL } from "@/lib/mock-data";
 import { cx } from "./ui";
 
@@ -81,6 +82,24 @@ export function Ficha({ icono: I, tono = "marca", size = 36 }: { icono: LucideIc
   return (
     <span className={cx("inline-flex shrink-0 items-center justify-center rounded-xl", t)} style={{ width: size, height: size }}>
       <I size={Math.round(size * 0.5)} strokeWidth={2.1} aria-hidden />
+    </span>
+  );
+}
+
+export const ROL_VISUAL: Record<Rol, { icono: LucideIcon; chip: string }> = {
+  admin: { icono: ShieldCheck, chip: "bg-marca-100 text-marca-900" },
+  jefe: { icono: Crown, chip: "bg-t-ins-bg text-t-ins-tx" },
+  coordinador: { icono: ClipboardList, chip: "bg-t-rev-bg text-t-rev-tx" },
+  tecnico: { icono: HardHat, chip: "bg-t-ens-bg text-t-ens-tx" },
+};
+
+/** Etiqueta del rol del usuario con su ícono. */
+export function ChipRol({ rol }: { rol: Rol }) {
+  const V = ROL_VISUAL[rol];
+  const I = V.icono;
+  return (
+    <span className={cx("inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-xs font-semibold whitespace-nowrap", V.chip)}>
+      <I size={12} strokeWidth={2.4} aria-hidden /> {ROL_LABEL[rol]}
     </span>
   );
 }

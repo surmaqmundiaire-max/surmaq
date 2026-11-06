@@ -2,16 +2,37 @@ import * as mock from "./mock-data";
 import type { Pendiente, Trabajo, Visita } from "./types";
 import { diasEntre, horasEntre } from "./format";
 
-export const perfil = (id: string) => mock.perfiles.find((p) => p.id === id)!;
-import type { Cliente, Equipo } from "./types";
+import type { Cliente, Equipo, Perfil, Rol } from "./types";
 
 /** Equipos vigentes: el StoreProvider lo actualiza en cada render con el estado de la maqueta. */
-export const registro: { equipos: Equipo[]; clientes: Cliente[] } = { equipos: mock.equipos, clientes: mock.clientes };
+export const registro: { equipos: Equipo[]; clientes: Cliente[]; perfiles: Perfil[] } = { equipos: mock.equipos, clientes: mock.clientes, perfiles: mock.perfiles };
+export const perfil = (id: string) => registro.perfiles.find((p) => p.id === id) ?? { id, nombre: "Usuario eliminado", email: "", rol: "tecnico" as Rol, ciudad: "", area: "" };
 export const cliente = (id: string) => registro.clientes.find((c) => c.id === id)!;
 export const listaClientes = () => registro.clientes;
 export const equipo = (id: string) => registro.equipos.find((e) => e.id === id)!;
 export const listaEquipos = () => registro.equipos;
-export const tecnicos = () => mock.perfiles.filter((p) => p.rol === "tecnico");
+export const tecnicos = () => registro.perfiles.filter((p) => p.rol === "tecnico" && p.activo !== false);
+
+// ---------- Roles y permisos ----------
+export const ROL_LABEL: Record<Rol, string> = {
+  admin: "Administrador",
+  jefe: "Jefe de mantenimiento",
+  coordinador: "Coordinador de mantenimiento",
+  tecnico: "Técnico",
+};
+
+export type Permiso = "programar_tareas" | "gestionar_usuarios" | "ver_panel" | "aprobar_permisos";
+const PERMISOS: Record<Rol, Permiso[]> = {
+  admin: ["programar_tareas", "gestionar_usuarios", "ver_panel", "aprobar_permisos"],
+  jefe: ["programar_tareas", "gestionar_usuarios", "ver_panel", "aprobar_permisos"],
+  coordinador: ["programar_tareas", "ver_panel"],
+  tecnico: [],
+};
+export const puede = (rol: Rol, p: Permiso) => PERMISOS[rol].includes(p);
+
+/** Técnicos a los que un usuario puede programar tareas (el coordinador, solo los de su ciudad). */
+export const tecnicosProgramables = (u: Perfil) =>
+  u.rol === "tecnico" ? [u] : tecnicos().filter((t) => !u.ciudadesACargo?.length || u.ciudadesACargo.includes(t.ciudad));
 
 export const contexto = (trabajos: Trabajo[], trabajoId: string) => {
   const t = trabajos.find((x) => x.id === trabajoId)!;

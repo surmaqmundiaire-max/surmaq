@@ -1,7 +1,7 @@
 // Tipos alineados con supabase/migrations/0001_modelo_inicial.sql
 // para que luego la maqueta se conecte a Supabase sin cambiar las pantallas.
 
-export type Rol = "admin" | "tecnico" | "vendedor";
+export type Rol = "admin" | "jefe" | "coordinador" | "tecnico";
 export type TipoTrabajo = "mantenimiento" | "revision" | "instalacion" | "arranque" | "ensamblaje";
 export type LugarTrabajo = "en_cliente" | "en_oficina";
 export type EstadoTrabajo = "abierto" | "en_progreso" | "cerrado" | "cancelado";
@@ -15,6 +15,9 @@ export interface Perfil {
   ciudad: string;
   area: string;
   telefono?: string;
+  activo?: boolean;
+  /** Ciudades que coordina (coordinadores); vacío = todas */
+  ciudadesACargo?: string[];
 }
 
 export interface Cliente {
@@ -84,7 +87,9 @@ export interface Visita {
   fotos: { url: string; momento: "antes" | "despues" }[];
   firmaCliente?: string; // data URL
   firmadoPor?: string;
-  salidaCorregida?: boolean; // la salida se registró después, con hora indicada por el técnico
+  salidaCorregida?: boolean;
+  programadaPor?: string; // id del usuario que la programó
+  vistaPorTecnico?: boolean; // el técnico ya abrió la tarea asignada // la salida se registró después, con hora indicada por el técnico
 }
 
 export interface Pendiente {

@@ -39,7 +39,7 @@ export function Recordatorios() {
     try {
       enviados = JSON.parse(localStorage.getItem(KEY) ?? "[]");
     } catch {}
-    const nuevos = lista.filter((r) => r.nivel !== "info" && !enviados.includes(r.id));
+    const nuevos = lista.filter((r) => (r.nivel !== "info" || r.id.startsWith("new-")) && !enviados.includes(r.id));
     for (const r of nuevos) {
       try {
         new Notification(r.titulo, { body: r.detalle, tag: r.id });

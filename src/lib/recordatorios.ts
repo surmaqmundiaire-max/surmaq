@@ -1,5 +1,5 @@
 import type { Trabajo, Visita } from "./types";
-import { contexto } from "./selectors";
+import { contexto, perfil, ROL_LABEL } from "./selectors";
 import { fechaCorta, hora, horasEntre } from "./format";
 
 export interface Recordatorio {
@@ -22,6 +22,10 @@ export function recordatoriosTecnico(visitas: Visita[], trabajos: Trabajo[], tec
     if (v.tecnicoId !== tecnicoId) continue;
     const cli = contexto(trabajos, v.trabajoId).cliente.razonSocial;
     const href = `/tecnico/visita/${v.id}`;
+    if (v.estado === "programada" && v.programadaPor && v.programadaPor !== tecnicoId && !v.vistaPorTecnico) {
+      const quien = perfil(v.programadaPor);
+      out.push({ id: `new-${v.id}`, nivel: "info", titulo: `Nueva tarea: ${cli}`, detalle: `${fechaCorta(v.programadaInicio)} a las ${hora(v.programadaInicio)} · asignada por ${quien.nombre} (${ROL_LABEL[quien.rol].toLowerCase()})`, accion: "Ver", href });
+    }
     if (v.estado === "en_curso" && v.checkinEn && !v.checkinEn.startsWith(hoy)) {
       out.push({ id: `olv-${v.id}`, nivel: "critico", titulo: "Te falta marcar una salida", detalle: `${cli} · entrada el ${fechaCorta(v.checkinEn)} a las ${hora(v.checkinEn)}`, accion: "Registrar salida", href });
     } else if (v.estado === "en_curso" && horasEntre(v.programadaFin, ahora) * 60 > MIN_TOLERANCIA_SALIDA) {
