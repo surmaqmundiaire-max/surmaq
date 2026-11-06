@@ -3,11 +3,12 @@ import type { Pendiente, Trabajo, Visita } from "./types";
 import { diasEntre, horasEntre } from "./format";
 
 export const perfil = (id: string) => mock.perfiles.find((p) => p.id === id)!;
-export const cliente = (id: string) => mock.clientes.find((c) => c.id === id)!;
-import type { Equipo } from "./types";
+import type { Cliente, Equipo } from "./types";
 
 /** Equipos vigentes: el StoreProvider lo actualiza en cada render con el estado de la maqueta. */
-export const registro: { equipos: Equipo[] } = { equipos: mock.equipos };
+export const registro: { equipos: Equipo[]; clientes: Cliente[] } = { equipos: mock.equipos, clientes: mock.clientes };
+export const cliente = (id: string) => registro.clientes.find((c) => c.id === id)!;
+export const listaClientes = () => registro.clientes;
 export const equipo = (id: string) => registro.equipos.find((e) => e.id === id)!;
 export const listaEquipos = () => registro.equipos;
 export const tecnicos = () => mock.perfiles.filter((p) => p.rol === "tecnico");
@@ -53,18 +54,18 @@ export function alertas(visitas: Visita[], pendientes: Pendiente[], trabajos: Tr
   const hoy = ahora.slice(0, 10);
   for (const v of visitas) {
     const tec = perfil(v.tecnicoId).nombre;
-    const href = `/admin/trabajos/${v.trabajoId}`;
+    const href = `/admin/mantenimientos/${v.trabajoId}`;
     if (v.estado === "en_curso" && v.checkinEn && !v.checkinEn.startsWith(hoy)) {
-      out.push({ id: `olv-${v.id}`, nivel: "critica", titulo: `${tec} no marcó la salida`, detalle: `Visita del ${v.checkinEn.slice(8, 10)}/${v.checkinEn.slice(5, 7)} sigue abierta: las horas no se pueden calcular`, href });
+      out.push({ id: `olv-${v.id}`, nivel: "critica", titulo: `${tec} no marcó la salida`, detalle: `Tarea del ${v.checkinEn.slice(8, 10)}/${v.checkinEn.slice(5, 7)} sigue abierta: las horas no se pueden calcular`, href });
     } else if (v.estado === "en_curso" && horasVisita(v, ahora) > UMBRAL_HORAS_VISITA) {
-      out.push({ id: `larga-${v.id}`, nivel: "advertencia", titulo: `${tec}: visita de más de ${UMBRAL_HORAS_VISITA} h`, detalle: v.descripcion, href });
+      out.push({ id: `larga-${v.id}`, nivel: "advertencia", titulo: `${tec}: tarea de más de ${UMBRAL_HORAS_VISITA} h`, detalle: v.descripcion, href });
     }
     if (v.checkinEn?.startsWith(hoy) && (v.checkinDistanciaM ?? 0) > UMBRAL_DISTANCIA_M) {
       const km = ((v.checkinDistanciaM ?? 0) / 1000).toFixed(1);
       out.push({ id: `gps-${v.id}`, nivel: "advertencia", titulo: `${tec} inició a ${km} km del cliente`, detalle: v.descripcion, href });
     }
     if (v.estado === "programada" && v.programadaInicio.startsWith(hoy) && horasEntre(v.programadaInicio, ahora) > 0.5) {
-      out.push({ id: `atraso-${v.id}`, nivel: "advertencia", titulo: `${tec} no ha iniciado una visita`, detalle: `Programada a las ${v.programadaInicio.slice(11, 16)} · ${v.descripcion}`, href });
+      out.push({ id: `atraso-${v.id}`, nivel: "advertencia", titulo: `${tec} no ha marcado entrada`, detalle: `Programada a las ${v.programadaInicio.slice(11, 16)} · ${v.descripcion}`, href });
     }
   }
   for (const e of registro.equipos) {
@@ -75,7 +76,7 @@ export function alertas(visitas: Visita[], pendientes: Pendiente[], trabajos: Tr
   }
   for (const p of pendientes) {
     if (!p.resueltoEn && diasEntre(p.creadoEn, hoy) >= 3) {
-      out.push({ id: `pend-${p.id}`, nivel: "advertencia", titulo: `Pendiente sin resolver hace ${diasEntre(p.creadoEn, hoy)} días`, detalle: p.descripcion, href: `/admin/trabajos/${p.trabajoId}` });
+      out.push({ id: `pend-${p.id}`, nivel: "advertencia", titulo: `Pendiente sin resolver hace ${diasEntre(p.creadoEn, hoy)} días`, detalle: p.descripcion, href: `/admin/mantenimientos/${p.trabajoId}` });
     }
   }
   void trabajos;

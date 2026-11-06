@@ -18,7 +18,7 @@ export default function PendientesTecnico() {
       </header>
       <div className="px-4 py-4">
         {lista.length === 0 ? (
-          <Vacio>No tienes pendientes. Los que registres al cerrar una visita aparecerán aquí.</Vacio>
+          <Vacio>No tienes pendientes. Los que registres al cerrar una tarea aparecerán aquí.</Vacio>
         ) : (
           <ul className="divide-y divide-borde overflow-hidden rounded-2xl border border-borde bg-superficie">
             {lista.map((p) => {

@@ -33,7 +33,7 @@ export default function VisitaPage({ params }: { params: Promise<{ id: string }>
   if (!v) {
     return (
       <div className="p-6">
-        <p className="text-tinta-2">No se encontró la visita.</p>
+        <p className="text-tinta-2">No se encontró la tarea.</p>
         <Link href="/tecnico" className="mt-4 inline-block font-semibold text-marca-700">Volver a Hoy</Link>
       </div>
     );
@@ -49,7 +49,7 @@ export default function VisitaPage({ params }: { params: Promise<{ id: string }>
           <Link href="/tecnico" aria-label="Volver a Hoy" className="flex h-11 w-11 items-center justify-center rounded-full hover:bg-white/10">
             <ArrowLeft size={22} />
           </Link>
-          <p className="text-sm text-marca-100 tabular">Trabajo Nº {trabajo.numero} · {TIPO_LABEL[trabajo.tipo]}</p>
+          <p className="text-sm text-marca-100 tabular">Mantenimiento Nº {trabajo.numero} · {TIPO_LABEL[trabajo.tipo]}</p>
         </div>
         <div className="px-2">
           <h1 className="text-xl leading-tight font-bold">{cliente.razonSocial}</h1>
@@ -63,8 +63,9 @@ export default function VisitaPage({ params }: { params: Promise<{ id: string }>
       </header>
 
       {v.estado === "programada" && <Llegada id={id} />}
-      {v.estado === "en_curso" && !cerrando && <Trabajo id={id} paso={paso} setPaso={setPaso} setCerrando={setCerrando} />}
-      {v.estado === "en_curso" && cerrando && <Cierre id={id} setPaso={setPaso} setCerrando={setCerrando} />}
+      {v.estado === "en_curso" && v.checkinEn && !v.checkinEn.startsWith(s.ahora.slice(0, 10)) && <SalidaOlvidada id={id} />}
+      {v.estado === "en_curso" && v.checkinEn?.startsWith(s.ahora.slice(0, 10)) && !cerrando && <Trabajo id={id} paso={paso} setPaso={setPaso} setCerrando={setCerrando} />}
+      {v.estado === "en_curso" && v.checkinEn?.startsWith(s.ahora.slice(0, 10)) && cerrando && <Cierre id={id} setPaso={setPaso} setCerrando={setCerrando} />}
       {v.estado === "finalizada" && <Resumen id={id} />}
     </div>
   );
@@ -83,6 +84,9 @@ type SetCerrando = (c: boolean) => void;
   // ---------------- 1. LLEGADA ----------------
 function Llegada({ id }: { id: string }) {
     const { s, v, equipo, cliente, pendientesTrabajo } = useVisita(id);
+    // Solo una tarea abierta a la vez: así ninguna salida queda sin marcar.
+    const otraAbierta = s.visitas.find((x) => x.tecnicoId === v.tecnicoId && x.estado === "en_curso" && x.id !== v.id);
+    const otraCliente = otraAbierta ? contexto(s.trabajos, otraAbierta.trabajoId).cliente.razonSocial : "";
     const [estadoGps, setEstadoGps] = useState<"idle" | "buscando" | "lejos">("idle");
     const [dist, setDist] = useState(0);
     const companeros = tecnicos().filter((t) => t.id !== v!.tecnicoId);
@@ -112,7 +116,7 @@ function Llegada({ id }: { id: string }) {
           </div>
 
           <section className="rounded-2xl border border-borde bg-superficie p-4">
-            <h2 className="text-sm font-semibold text-tinta-2">Visita programada</h2>
+            <h2 className="text-sm font-semibold text-tinta-2">Tarea programada</h2>
             <p className="mt-1 text-lg font-semibold">{v!.descripcion}</p>
             <p className="mt-1 text-sm text-tinta-2 tabular">{fechaCorta(v!.programadaInicio)} · {hora(v!.programadaInicio)} – {hora(v!.programadaFin)}</p>
             <p className="mt-2 flex items-start gap-1.5 text-sm text-tinta-2"><MapPin size={16} className="mt-0.5 shrink-0" /> {cliente.direccion}, {cliente.ciudad}</p>
@@ -121,7 +125,7 @@ function Llegada({ id }: { id: string }) {
 
           {pendientesTrabajo.length > 0 && (
             <section className="rounded-2xl bg-aviso-bg p-4">
-              <h2 className="text-sm font-semibold text-aviso">Pendientes de este trabajo</h2>
+              <h2 className="text-sm font-semibold text-aviso">Pendientes de este mantenimiento</h2>
               <ul className="mt-2 space-y-1.5 text-[15px]">
                 {pendientesTrabajo.map((p) => (
                   <li key={p.id} className="flex gap-2">
@@ -174,7 +178,16 @@ function Llegada({ id }: { id: string }) {
         </div>
 
         <BarraAccion>
-          {estadoGps === "lejos" ? (
+          {otraAbierta ? (
+            <div className="space-y-2" role="alert">
+              <p className="text-[15px]">
+                <span className="font-semibold text-critico">Tienes otra tarea abierta en {otraCliente}.</span> Marca su salida antes de entrar aquí.
+              </p>
+              <Link href={`/tecnico/visita/${otraAbierta.id}`} className="flex min-h-14 w-full items-center justify-center gap-2 rounded-2xl bg-marca-800 text-[17px] font-semibold text-white">
+                Ir a marcar la salida <ChevronRight size={20} />
+              </Link>
+            </div>
+          ) : estadoGps === "lejos" ? (
             <div className="space-y-2" role="alert">
               <p className="text-[15px]">
                 <span className="font-semibold text-aviso">Estás a {metros(dist)} del cliente.</span> Se registrará así y el administrador lo verá.
@@ -189,7 +202,7 @@ function Llegada({ id }: { id: string }) {
               {estadoGps === "buscando" ? (
                 <><Loader2 size={20} className="animate-spin" /> Obteniendo ubicación…</>
               ) : (
-                <><MapPin size={20} /> Llegué · Iniciar visita</>
+                <><MapPin size={20} /> Llegué · Marcar entrada</>
               )}
             </BotonPrincipal>
           )}
@@ -213,7 +226,7 @@ function Trabajo({ id, paso, setPaso, setCerrando }: { id: string; paso: Paso; s
     ];
     return (
       <>
-        <nav className="border-b border-borde bg-superficie" aria-label="Pasos de la visita">
+        <nav className="border-b border-borde bg-superficie" aria-label="Pasos de la tarea">
           <ul className="grid grid-cols-3">
             {tabs.map((t) => (
               <li key={t.id}>
@@ -278,7 +291,7 @@ function Trabajo({ id, paso, setPaso, setCerrando }: { id: string; paso: Paso; s
               <span />
             )}
             <BotonPrincipal onClick={() => setCerrando(true)}>
-              <CheckCircle2 size={20} /> Finalizar visita
+              <CheckCircle2 size={20} /> Terminar y marcar salida
             </BotonPrincipal>
           </div>
         </BarraAccion>
@@ -541,10 +554,10 @@ function Cierre({ id, setPaso, setCerrando }: { id: string; setPaso: SetPaso; se
           </section>
 
           <section>
-            <h2 className="font-semibold">¿El trabajo quedó terminado?</h2>
+            <h2 className="font-semibold">¿El mantenimiento quedó terminado?</h2>
             <div className="mt-2 grid grid-cols-2 gap-2">
-              <Opcion activo={terminado === "si"} onClick={() => setTerminado("si")} titulo="Sí, terminado" sub="Se cierra el trabajo" />
-              <Opcion activo={terminado === "no"} onClick={() => setTerminado("no")} titulo="No, falta" sub="Agendar otra visita" />
+              <Opcion activo={terminado === "si"} onClick={() => setTerminado("si")} titulo="Sí, terminado" sub="Se cierra el mantenimiento" />
+              <Opcion activo={terminado === "no"} onClick={() => setTerminado("no")} titulo="No, falta" sub="Agendar otra tarea" />
             </div>
             {terminado === "si" && (
               <div className="mt-3">
@@ -558,7 +571,7 @@ function Cierre({ id, setPaso, setCerrando }: { id: string; setPaso: SetPaso; se
             )}
             {terminado === "no" && (
               <div className="mt-3">
-                <p className="text-sm font-medium">Próxima visita</p>
+                <p className="text-sm font-medium">Próxima tarea</p>
                 <div className="mt-2 flex flex-wrap gap-2">
                   {opcionesProxima.map((o) => (
                     <Chip key={o.iso} activo={proxima === o.iso} onClick={() => setProxima(o.iso)}>{o.etiqueta}</Chip>
@@ -608,7 +621,7 @@ function Cierre({ id, setPaso, setCerrando }: { id: string; setPaso: SetPaso; se
           </BotonPrincipal>
           {!listo && (
             <p className="mt-2 text-center text-xs text-tinta-3">
-              {terminado === null ? "Indica si el trabajo quedó terminado" : terminado === "si" ? "Elige el estado general del equipo" : "Elige la fecha de la próxima visita"}
+              {terminado === null ? "Indica si el mantenimiento quedó terminado" : terminado === "si" ? "Elige el estado general del equipo" : "Elige la fecha de la próxima tarea"}
             </p>
           )}
         </BarraAccion>
@@ -624,7 +637,7 @@ function Resumen({ id }: { id: string }) {
     return (
       <div className="flex-1 space-y-5 px-4 py-5">
         <section className="rounded-2xl bg-ok-bg p-4 text-ok">
-          <p className="flex items-center gap-2 text-lg font-bold"><CheckCircle2 size={24} /> Visita finalizada</p>
+          <p className="flex items-center gap-2 text-lg font-bold"><CheckCircle2 size={24} /> Tarea finalizada</p>
           <p className="mt-1 text-sm tabular">
             Entrada {hora(v!.checkinEn)} · Salida {hora(v!.checkoutEn)} · {duracion(horasVisita(v!, s.ahora))}
           </p>
@@ -656,6 +669,44 @@ function Resumen({ id }: { id: string }) {
       </div>
     );
   }
+
+// ---------------- SALIDA OLVIDADA ----------------
+function SalidaOlvidada({ id }: { id: string }) {
+    const { s, v } = useVisita(id);
+    const dia = v.checkinEn!.slice(0, 10);
+    const sugerida = v.programadaFin.startsWith(dia) && v.programadaFin > v.checkinEn! ? v.programadaFin.slice(11, 16) : "17:00";
+    const [horaSalida, setHoraSalida] = useState(sugerida);
+    const valida = `${dia}T${horaSalida}:00` > v.checkinEn!;
+    return (
+      <>
+        <div className="flex-1 space-y-4 px-4 py-5">
+          <section className="rounded-2xl bg-critico-bg p-4 text-critico" role="alert">
+            <p className="text-lg font-bold">No se marcó la salida</p>
+            <p className="mt-1 text-[15px] text-tinta">
+              Entraste el <strong>{fechaCorta(dia)}</strong> a las <strong>{hora(v.checkinEn)}</strong> y la tarea quedó abierta.
+              Indica a qué hora saliste ese día. El administrador verá que la salida se registró después.
+            </p>
+          </section>
+          <label className="block">
+            <span className="font-semibold">Hora de salida del {fechaCorta(dia)}</span>
+            <input
+              type="time"
+              value={horaSalida}
+              onChange={(e) => setHoraSalida(e.target.value)}
+              aria-invalid={!valida}
+              className="mt-2 min-h-14 w-full rounded-xl border border-borde bg-superficie px-4 text-xl font-semibold tabular outline-none focus:border-marca-600 focus:ring-2 focus:ring-marca-600/20"
+            />
+            {!valida && <span className="mt-1 block text-sm text-critico">La salida debe ser después de la entrada ({hora(v.checkinEn)}).</span>}
+          </label>
+        </div>
+        <BarraAccion>
+          <BotonPrincipal disabled={!valida} onClick={() => s.registrarSalidaOlvidada(v.id, `${dia}T${horaSalida}:00`)}>
+            <CheckCircle2 size={20} /> Registrar salida a las {horaSalida}
+          </BotonPrincipal>
+        </BarraAccion>
+      </>
+    );
+}
 
 // ---------- piezas ----------
 interface SpeechRec {

@@ -4,7 +4,7 @@
 // estas acciones se reemplazan por llamadas a la base de datos.
 import { createContext, useCallback, useContext, useEffect, useMemo, useState } from "react";
 import * as mock from "./mock-data";
-import type { Equipo, Pendiente, Trabajo, Visita } from "./types";
+import type { Cliente, Equipo, Pendiente, Trabajo, Visita } from "./types";
 import { registro } from "./selectors";
 import { toLocalIso } from "./format";
 
@@ -13,6 +13,7 @@ interface Estado {
   pendientes: Pendiente[];
   trabajos: Trabajo[];
   equipos: Equipo[];
+  clientes: Cliente[];
   tecnicoActualId: string;
 }
 
@@ -21,10 +22,11 @@ const inicial = (): Estado => ({
   pendientes: mock.pendientes,
   trabajos: mock.trabajos,
   equipos: mock.equipos,
+  clientes: mock.clientes,
   tecnicoActualId: "u-hchicazawa",
 });
 
-const KEY = "optimum-maqueta-v2";
+const KEY = "optimum-maqueta-v3";
 
 function useAcciones(set: React.Dispatch<React.SetStateAction<Estado>>, ahora: () => string) {
   const patchVisita = useCallback(
@@ -58,6 +60,20 @@ function useAcciones(set: React.Dispatch<React.SetStateAction<Estado>>, ahora: (
       agregarFoto: (id: string, url: string, momento: "antes" | "despues") =>
         patchVisita(id, (v) => ({ fotos: [...v.fotos, { url, momento }] })),
       quitarFoto: (id: string, idx: number) => patchVisita(id, (v) => ({ fotos: v.fotos.filter((_, i) => i !== idx) })),
+      agregarCliente: (c: Omit<Cliente, "id">) => {
+        const id = `c-${Date.now()}`;
+        set((s) => ({ ...s, clientes: [...s.clientes, { ...c, id }] }));
+        return id;
+      },
+      /** Crea un mantenimiento (trabajo) con el siguiente número correlativo. */
+      agregarTrabajo: (t: Omit<Trabajo, "id" | "numero">) => {
+        const id = `t-${Date.now()}`;
+        set((s) => ({ ...s, trabajos: [...s.trabajos, { ...t, id, numero: Math.max(0, ...s.trabajos.map((x) => x.numero)) + 1 }] }));
+        return id;
+      },
+      /** Registra una salida olvidada con la hora que indica el técnico (queda marcada como corregida). */
+      registrarSalidaOlvidada: (id: string, salida: string) =>
+        patchVisita(id, { estado: "finalizada", checkoutEn: salida, salidaCorregida: true }),
       agregarEquipo: (e: Omit<Equipo, "id" | "codigoQr">) => {
         const id = `e-${Date.now()}`;
         set((s) => ({ ...s, equipos: [...s.equipos, { ...e, id, codigoQr: `OS-${id.slice(-5).toUpperCase()}` }] }));
@@ -65,8 +81,11 @@ function useAcciones(set: React.Dispatch<React.SetStateAction<Estado>>, ahora: (
       },
       actualizarEquipo: (id: string, cambios: Partial<Equipo>) =>
         set((s) => ({ ...s, equipos: s.equipos.map((e) => (e.id === id ? { ...e, ...cambios } : e)) })),
-      agregarVisita: (v: Omit<Visita, "id">) =>
-        set((s) => ({ ...s, visitas: [...s.visitas, { ...v, id: `v-${Date.now()}` }] })),
+      agregarVisita: (v: Omit<Visita, "id">) => {
+        const id = `v-${Date.now()}`;
+        set((s) => ({ ...s, visitas: [...s.visitas, { ...v, id }] }));
+        return id;
+      },
       agregarPendiente:(p: Omit<Pendiente, "id" | "creadoEn">) =>
         set((s) => ({ ...s, pendientes: [...s.pendientes, { ...p, id: `p-${Date.now()}`, creadoEn: ahora() }] })),
       quitarPendiente: (id: string) => set((s) => ({ ...s, pendientes: s.pendientes.filter((p) => p.id !== id) })),
@@ -128,7 +147,8 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
   }, [estado, cargado]);
 
   const acciones = useAcciones(setEstado, ahora);
-  registro.equipos = estado.equipos; // los selectores leen los equipos vigentes
+  registro.equipos = estado.equipos; // los selectores leen los datos vigentes
+  registro.clientes = estado.clientes;
   return <StoreCtx.Provider value={{ ...estado, ...acciones, ahora: ahoraStr }}>{children}</StoreCtx.Provider>;
 }
 

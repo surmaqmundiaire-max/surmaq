@@ -47,7 +47,7 @@ export default function Tecnicos() {
                   </div>
                 </div>
                 <div className="flex flex-wrap gap-2">
-                  {sinCerrar > 0 && <Badge tono="critico">{sinCerrar} visita sin salida</Badge>}
+                  {sinCerrar > 0 && <Badge tono="critico">{sinCerrar} tarea sin salida</Badge>}
                   {lejos > 0 && <Badge tono="aviso">{lejos} inicio lejos del cliente</Badge>}
                   {perm.map((p) => <Badge key={p.id} tono="info">{RAZON[p.razon]} {fechaCorta(p.desde)}{p.aprobado ? "" : " · por aprobar"}</Badge>)}
                 </div>
@@ -65,7 +65,7 @@ export default function Tecnicos() {
                 <div className="text-right">
                   <p className="text-xs text-tinta-2">Total 10 días</p>
                   <p className="text-xl font-semibold tabular">{total.toFixed(1)} h</p>
-                  <p className="text-xs text-tinta-2 tabular">{enRango.length} visitas</p>
+                  <p className="text-xs text-tinta-2 tabular">{enRango.length} tareas</p>
                 </div>
               </div>
             </li>

@@ -84,6 +84,7 @@ export interface Visita {
   fotos: { url: string; momento: "antes" | "despues" }[];
   firmaCliente?: string; // data URL
   firmadoPor?: string;
+  salidaCorregida?: boolean; // la salida se registró después, con hora indicada por el técnico
 }
 
 export interface Pendiente {

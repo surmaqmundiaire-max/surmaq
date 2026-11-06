@@ -1,15 +1,15 @@
 "use client";
 
 import Link from "next/link";
+import { Plus } from "lucide-react";
 import { useState } from "react";
-import { clientes } from "@/lib/mock-data";
 import { perfil } from "@/lib/selectors";
 import { useStore } from "@/lib/store";
 import { Badge, Vacio } from "@/components/ui";
 import { Buscador, Selector, norm } from "@/components/filtros";
 
 export default function Clientes() {
-  const { trabajos, equipos } = useStore();
+  const { trabajos, equipos, clientes } = useStore();
   const [q, setQ] = useState("");
   const [ciudad, setCiudad] = useState("todas");
   const ciudades = [...new Set(clientes.map((c) => c.ciudad))].sort();
@@ -18,7 +18,10 @@ export default function Clientes() {
   );
   return (
     <div className="mx-auto max-w-7xl">
-      <h1 className="text-2xl font-bold">Clientes y equipos</h1>
+      <div className="flex flex-wrap items-center justify-between gap-3">
+        <h1 className="text-2xl font-bold">Clientes</h1>
+        <Link href="/admin/clientes/nuevo" className="inline-flex min-h-10 items-center gap-1.5 rounded-xl bg-marca-800 px-4 text-sm font-semibold text-white hover:bg-marca-900"><Plus size={17} /> Nueva empresa</Link>
+      </div>
       <div className="mt-4 flex flex-wrap items-center gap-3">
         <Buscador valor={q} onChange={setQ} placeholder="Buscar por nombre, RUC, industria o contacto…" />
         <Selector etiqueta="Ciudad" valor={ciudad} onChange={setCiudad} opciones={[["todas", "Todas"], ...ciudades.map((c) => [c, c] as [string, string])]} />
@@ -32,7 +35,7 @@ export default function Clientes() {
               <th className="px-4 py-2.5 font-semibold">Industria</th>
               <th className="px-4 py-2.5 font-semibold">Responsable</th>
               <th className="px-4 py-2.5 text-right font-semibold">Equipos</th>
-              <th className="px-4 py-2.5 text-right font-semibold">Trabajos abiertos</th>
+              <th className="px-4 py-2.5 text-right font-semibold">Mant. abiertos</th>
             </tr>
           </thead>
           <tbody className="divide-y divide-borde">

@@ -1,19 +1,23 @@
 "use client";
 
 import Link from "next/link";
-import { use } from "react";
-import { ArrowLeft, Camera, Car, Check, MapPin, PenLine, Users } from "lucide-react";
+import { useState } from "react";
+import { CalendarPlus, Camera, Car, Check, ChevronRight, Clock3, MapPin, PenLine, Users } from "lucide-react";
 import { useStore } from "@/lib/store";
 import { avanceTrabajo, contexto, horasVisita, perfil, UMBRAL_DISTANCIA_M } from "@/lib/selectors";
 import { duracion, fechaCorta, fechaLarga, hora, metros } from "@/lib/format";
 import { TIPO_LABEL } from "@/lib/mock-data";
-import { Avatar, Badge, Barra, EstadoTrabajoBadge, EstadoVisitaBadge, Vacio, cx } from "@/components/ui";
+import { Avatar, Badge, Barra, EstadoTrabajoBadge, EstadoVisitaBadge, Vacio, cx } from "./ui";
+import { Migas, rutas, type Base } from "./migas";
+import { FormTarea } from "./formularios";
 
-export default function TrabajoDetalle({ params }: { params: Promise<{ id: string }> }) {
-  const { id } = use(params);
+/** Detalle de un mantenimiento con sus tareas. Compartido entre administración y técnico. */
+export function DetalleMantenimiento({ id, base }: { id: string; base: Base }) {
   const s = useStore();
+  const [agendando, setAgendando] = useState(false);
+  const r = rutas(base);
   const t = s.trabajos.find((x) => x.id === id);
-  if (!t) return <p>No se encontró el trabajo.</p>;
+  if (!t) return <p>No se encontró el mantenimiento.</p>;
   const { equipo, cliente } = contexto(s.trabajos, id);
   const vis = s.visitas.filter((v) => v.trabajoId === id).sort((a, b) => b.programadaInicio.localeCompare(a.programadaInicio));
   const pend = s.pendientes.filter((p) => p.trabajoId === id);
@@ -22,16 +26,16 @@ export default function TrabajoDetalle({ params }: { params: Promise<{ id: strin
 
   return (
     <div className="mx-auto max-w-5xl space-y-6">
-      <Link href="/admin/trabajos" className="inline-flex items-center gap-1 text-sm font-semibold text-marca-700 hover:underline"><ArrowLeft size={16} /> Trabajos</Link>
+      <Migas base={base} trabajoId={id} />
 
       <header className="flex flex-wrap items-start justify-between gap-4">
         <div>
-          <p className="text-sm text-tinta-2 tabular">Trabajo Nº {t.numero}</p>
+          <p className="text-sm text-tinta-2 tabular">Mantenimiento Nº {t.numero}</p>
           <h1 className="text-2xl font-bold">{t.titulo}</h1>
           <p className="mt-1 text-tinta-2">
-            <Link href={`/admin/clientes/${cliente.id}`} className="font-medium text-marca-700 hover:underline">{cliente.razonSocial}</Link>
+            <Link href={r.cliente(cliente.id)} className="font-medium text-marca-700 hover:underline">{cliente.razonSocial}</Link>
             {" · "}
-            <Link href={`/admin/equipos/${equipo.id}`} className="font-medium text-marca-700 hover:underline">{equipo.nombre}</Link>
+            <Link href={r.equipo(equipo.id)} className="font-medium text-marca-700 hover:underline">{equipo.nombre}</Link>
           </p>
         </div>
         <EstadoTrabajoBadge estado={t.estado} />
@@ -73,7 +77,20 @@ export default function TrabajoDetalle({ params }: { params: Promise<{ id: strin
       </section>
 
       <section>
-        <h2 className="mb-2 text-lg font-semibold">Visitas <span className="font-normal text-tinta-3 tabular">({vis.length})</span></h2>
+        <div className="mb-2 flex flex-wrap items-center justify-between gap-2">
+          <h2 className="text-lg font-semibold">Tareas <span className="font-normal text-tinta-3 tabular">({vis.length})</span></h2>
+          {!agendando && t.estado !== "cerrado" && (
+            <button type="button" onClick={() => setAgendando(true)} className="inline-flex min-h-11 items-center gap-1.5 rounded-xl bg-marca-800 px-4 text-sm font-semibold text-white hover:bg-marca-900">
+              <CalendarPlus size={17} /> Agendar tarea
+            </button>
+          )}
+        </div>
+        {agendando && (
+          <div className="mb-4 rounded-2xl border border-marca-600/30 bg-superficie p-4">
+            <h3 className="mb-3 font-semibold">Nueva tarea en este mantenimiento</h3>
+            <FormTarea trabajoId={id} onGuardado={() => setAgendando(false)} onCancelar={() => setAgendando(false)} />
+          </div>
+        )}
         <ol className="space-y-3">
           {vis.map((v) => {
             const lejos = (v.checkinDistanciaM ?? 0) > UMBRAL_DISTANCIA_M;
@@ -84,7 +101,11 @@ export default function TrabajoDetalle({ params }: { params: Promise<{ id: strin
                   <div className="flex items-center gap-3">
                     <Avatar nombre={perfil(v.tecnicoId).nombre} size={32} />
                     <div>
-                      <p className="font-semibold">{v.descripcion}</p>
+                      {base === "tecnico" ? (
+                        <Link href={r.tarea(v.id)} className="inline-flex items-center gap-1 font-semibold text-marca-800 hover:underline">{v.descripcion} <ChevronRight size={16} /></Link>
+                      ) : (
+                        <p className="font-semibold">{v.descripcion}</p>
+                      )}
                       <p className="text-sm text-tinta-2">{fechaLarga(v.programadaInicio)}</p>
                     </div>
                   </div>
@@ -106,6 +127,7 @@ export default function TrabajoDetalle({ params }: { params: Promise<{ id: strin
                   <Badge icono={<Camera size={12} />}>{v.fotos.length} fotos</Badge>
                   {v.autoEmpresa && <Badge icono={<Car size={12} />}>Auto de la empresa</Badge>}
                   {v.acompanantes.length > 0 && <Badge icono={<Users size={12} />}>Con {v.acompanantes.map((a) => perfil(a).nombre.split(" ")[0]).join(", ")}</Badge>}
+                  {v.salidaCorregida && <Badge tono="aviso" icono={<Clock3 size={12} />}>Salida registrada después</Badge>}
                   {v.firmadoPor && v.estado === "finalizada" && <Badge icono={<PenLine size={12} />}>Recibió {v.firmadoPor}</Badge>}
                 </p>
                 {v.comentarios && <p className="mt-3 rounded-lg bg-fondo px-3 py-2 text-sm">«{v.comentarios}»</p>}

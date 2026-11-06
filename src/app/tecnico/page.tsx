@@ -36,7 +36,7 @@ export default function Hoy() {
         </div>
         <h1 className="mt-1 text-2xl font-bold">Hola, {yo.nombre.split(" ")[0]}</h1>
         <p className="mt-1 text-sm text-marca-100 tabular">
-          {deHoy.length} {deHoy.length === 1 ? "visita" : "visitas"} hoy · {duracion(horasHoy)} trabajadas
+          {deHoy.length} {deHoy.length === 1 ? "tarea" : "tareas"} hoy · {duracion(horasHoy)} trabajadas
         </p>
         <div className="mt-4">
           <Jornada visitas={mias} ahora={ahora} dia={dia} oscuro escala alto="h-6" />
@@ -47,7 +47,7 @@ export default function Hoy() {
         {principal ? (
           <TarjetaPrincipal v={principal} />
         ) : (
-          <Vacio>No tienes más visitas para hoy. Las nuevas asignaciones aparecerán aquí.</Vacio>
+          <Vacio>No tienes más tareas para hoy. Las nuevas asignaciones aparecerán aquí.</Vacio>
         )}
 
         {resto.length > 0 && (
@@ -72,12 +72,27 @@ export default function Hoy() {
   function TarjetaPrincipal({ v }: { v: Visita }) {
     const { trabajo, equipo, cliente } = contexto(trabajos, v.trabajoId);
     const enCursoV = v.estado === "en_curso";
+    const olvidada = enCursoV && !!v.checkinEn && !v.checkinEn.startsWith(dia);
+    if (olvidada) {
+      return (
+        <section aria-label="Salida sin marcar" className="overflow-hidden rounded-2xl border border-critico/30 bg-superficie">
+          <div className="p-4">
+            <h2 className="text-sm font-semibold text-critico">Te falta marcar una salida</h2>
+            <p className="mt-2 text-xl leading-tight font-bold">{cliente.razonSocial}</p>
+            <p className="mt-1 text-[15px] text-tinta-2">Entraste el {fechaCorta(v.checkinEn)} a las {hora(v.checkinEn)} · {v.descripcion}</p>
+          </div>
+          <Link href={`/tecnico/visita/${v.id}`} className="flex min-h-14 items-center justify-center gap-2 bg-critico text-base font-semibold text-white">
+            Registrar salida <ChevronRight size={20} />
+          </Link>
+        </section>
+      );
+    }
     const atraso = !enCursoV && horasEntre(v.programadaInicio, ahora);
     return (
-      <section aria-label={enCursoV ? "Visita en curso" : "Siguiente visita"} className="overflow-hidden rounded-2xl border border-borde bg-superficie shadow-[0_2px_10px_rgba(11,42,74,0.08)]">
+      <section aria-label={enCursoV ? "Tarea en curso" : "Siguiente tarea"} className="overflow-hidden rounded-2xl border border-borde bg-superficie shadow-[0_2px_10px_rgba(11,42,74,0.08)]">
         <div className="p-4">
           <div className="flex items-center justify-between gap-2">
-            <h2 className="text-sm font-semibold text-tinta-2">{enCursoV ? "En curso" : "Siguiente visita"}</h2>
+            <h2 className="text-sm font-semibold text-tinta-2">{enCursoV ? "En curso" : "Siguiente tarea"}</h2>
             {enCursoV ? (
               <Badge tono="info" icono={<Timer size={12} />}>
                 <span className="tabular">{duracion(horasVisita(v, ahora))}</span>
@@ -110,7 +125,7 @@ export default function Hoy() {
           className="flex min-h-14 items-center justify-center gap-2 bg-marca-800 text-base font-semibold text-white transition-colors hover:bg-marca-900 active:bg-marca-950"
         >
           {enCursoV ? (
-            <>Continuar visita <ChevronRight size={20} /></>
+            <>Continuar tarea <ChevronRight size={20} /></>
           ) : (
             <><Play size={18} fill="currentColor" /> Abrir e iniciar</>
           )}

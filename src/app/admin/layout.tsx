@@ -2,17 +2,17 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { Building2, ClipboardList, Gauge, ListTodo, RotateCcw, Users, Wrench } from "lucide-react";
+import { Building2, CalendarDays, Gauge, ListTodo, RotateCcw, Users, Wrench } from "lucide-react";
 import { useStore } from "@/lib/store";
 import { alertas } from "@/lib/selectors";
 import { Avatar, cx } from "@/components/ui";
 
 const NAV = [
   { href: "/admin", label: "Panel", icono: Gauge },
-  { href: "/admin/trabajos", label: "Trabajos", icono: ClipboardList },
+  { href: "/admin/calendario", label: "Calendario", icono: CalendarDays },
   { href: "/admin/mantenimientos", label: "Mantenimientos", icono: Wrench },
   { href: "/admin/pendientes", label: "Pendientes", icono: ListTodo },
-  { href: "/admin/clientes", label: "Clientes y equipos", icono: Building2 },
+  { href: "/admin/clientes", label: "Clientes", icono: Building2 },
   { href: "/admin/tecnicos", label: "Técnicos", icono: Users },
 ];
 

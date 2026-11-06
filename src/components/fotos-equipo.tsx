@@ -159,7 +159,7 @@ export function LectorPlaca({ foto, onAplicar }: { foto?: string; onAplicar: (l:
         <div className="mt-4 grid grid-cols-[auto_1fr] gap-2">
           <button type="button" onClick={() => setEstado("idle")} className="min-h-12 rounded-xl border border-borde bg-superficie px-4 font-semibold">Descartar</button>
           <button type="button" onClick={() => { onAplicar(lectura); setEstado("idle"); }} className="min-h-12 rounded-xl bg-marca-800 font-semibold text-white hover:bg-marca-900">
-            Guardar datos del equipo
+            Usar estos datos
           </button>
         </div>
       </section>

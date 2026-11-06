@@ -2,21 +2,23 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { CalendarCheck, ListTodo, ScanLine, ChevronDown } from "lucide-react";
+import { Building2, CalendarCheck, CalendarDays, ListTodo, ChevronDown } from "lucide-react";
+import { Recordatorios } from "@/components/recordatorios";
 import { useStore } from "@/lib/store";
 import { tecnicos } from "@/lib/selectors";
 import { cx } from "@/components/ui";
 
 const NAV = [
   { href: "/tecnico", label: "Hoy", icono: CalendarCheck },
-  { href: "/tecnico/equipos", label: "Equipos", icono: ScanLine },
+  { href: "/tecnico/agenda", label: "Agenda", icono: CalendarDays },
+  { href: "/tecnico/clientes", label: "Clientes", icono: Building2 },
   { href: "/tecnico/pendientes", label: "Pendientes", icono: ListTodo },
 ];
 
 export default function TecnicoLayout({ children }: { children: React.ReactNode }) {
   const path = usePathname();
   const { tecnicoActualId, setTecnicoActual, pendientes, trabajos } = useStore();
-  const enVisita = path.startsWith("/tecnico/visita/") || path === "/tecnico/equipos/nuevo";
+  const enVisita = path.startsWith("/tecnico/visita/") || path.endsWith("/nuevo");
   const misTrabajos = new Set(trabajos.filter((t) => t.asignadoId === tecnicoActualId).map((t) => t.id));
   const nPend = pendientes.filter((p) => !p.resueltoEn && misTrabajos.has(p.trabajoId)).length;
 
@@ -41,13 +43,14 @@ export default function TecnicoLayout({ children }: { children: React.ReactNode 
           </label>
         </div>
 
+        <Recordatorios />
         <main className={cx("flex-1", !enVisita && "pb-24")}>{children}</main>
 
         {!enVisita && (
           <nav className="fixed inset-x-0 bottom-0 z-20 mx-auto max-w-md border-t border-borde bg-superficie pb-[env(safe-area-inset-bottom)] sm:absolute">
-            <ul className="grid grid-cols-3">
+            <ul className="grid grid-cols-4">
               {NAV.map(({ href, label, icono: I }) => {
-                const activo = href === "/tecnico" ? path === href : path.startsWith(href);
+                const activo = href === "/tecnico" ? path === href : path.startsWith(href) || (href === "/tecnico/clientes" && /^\/tecnico\/(equipos|mantenimientos)/.test(path));
                 return (
                   <li key={href}>
                     <Link

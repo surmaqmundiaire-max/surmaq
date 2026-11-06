@@ -33,8 +33,8 @@ export default function Panel() {
         <dl className="flex flex-wrap gap-x-8 gap-y-2">
           <Cifra k="En campo ahora" v={`${enCampo.length} de ${tecs.length}`} />
           <Cifra k="Horas hoy" v={duracion(horasHoy)} />
-          <Cifra k="Visitas hoy" v={`${finalizadasHoy} de ${visitasHoy.length} hechas`} />
-          <Cifra k="Trabajos abiertos" v={String(abiertos.length)} />
+          <Cifra k="Tareas hoy" v={`${finalizadasHoy} de ${visitasHoy.length} hechas`} />
+          <Cifra k="Mantenimientos abiertos" v={String(abiertos.length)} />
         </dl>
       </header>
 
@@ -50,7 +50,7 @@ export default function Panel() {
               <div className="grid grid-cols-1 items-end gap-2 border-b border-borde bg-fondo/60 px-4 py-2 md:grid-cols-[260px_1fr_150px]">
                 <p className="text-xs font-semibold text-tinta-2">{ciudad}</p>
                 <div className="hidden md:block"><Jornada visitas={[]} ahora={s.ahora} dia="" alto="h-0" escala /></div>
-                <p className="hidden text-right text-xs font-semibold text-tinta-2 md:block">Horas · visitas</p>
+                <p className="hidden text-right text-xs font-semibold text-tinta-2 md:block">Horas · tareas</p>
               </div>
               <ul className="divide-y divide-borde">
                 {tecs.filter((t) => t.ciudad === ciudad).map((t) => <FilaTecnico key={t.id} t={t} />)}
@@ -112,7 +112,7 @@ function FilaTecnico({ t }: { t: Perfil }) {
     } else if (siguiente) {
       estado = <>Libre · próxima {hora(siguiente.programadaInicio)}</>;
     } else {
-      estado = <span className="text-tinta-3">Sin más visitas hoy</span>;
+      estado = <span className="text-tinta-3">Sin más tareas hoy</span>;
     }
     return (
       <li className="grid grid-cols-1 items-center gap-3 px-4 py-3 md:grid-cols-[260px_1fr_150px]">
@@ -168,12 +168,12 @@ function HorasPorTecnico() {
                   <span className="block h-full rounded-r bg-marca-700 transition-all" style={{ width: `${(horas / max) * 100}%` }} />
                 </span>
                 <span className="w-28 text-right tabular">
-                  <span className="font-semibold">{horas.toFixed(1)} h</span> <span className="text-tinta-3">· {visitas} vis.</span>
+                  <span className="font-semibold">{horas.toFixed(1)} h</span> <span className="text-tinta-3">· {visitas} tareas</span>
                 </span>
               </li>
             ))}
           </ul>
-          <p className="mt-3 text-xs text-tinta-3">Solo cuenta visitas con entrada y salida registradas.</p>
+          <p className="mt-3 text-xs text-tinta-3">Solo cuenta tareas con entrada y salida registradas.</p>
         </div>
       </section>
     );
@@ -186,8 +186,8 @@ function EstadoTrabajos() {
     return (
       <section aria-labelledby="t-trabajos">
         <div className="mb-3 flex items-center justify-between">
-          <h2 id="t-trabajos" className="text-lg font-semibold">Trabajos en curso</h2>
-          <Link href="/admin/trabajos" className="text-sm font-semibold text-marca-700 hover:underline">Ver todos</Link>
+          <h2 id="t-trabajos" className="text-lg font-semibold">Mantenimientos en curso</h2>
+          <Link href="/admin/mantenimientos" className="text-sm font-semibold text-marca-700 hover:underline">Ver todos</Link>
         </div>
         <div className="overflow-hidden rounded-2xl border border-borde bg-superficie">
           <div className="flex flex-wrap gap-2 border-b border-borde px-4 py-3">
@@ -202,7 +202,7 @@ function EstadoTrabajos() {
               const av = avanceTrabajo(t, s.visitas);
               return (
                 <li key={t.id}>
-                  <Link href={`/admin/trabajos/${t.id}`} className="grid grid-cols-[1fr_100px] items-center gap-3 px-4 py-2.5 hover:bg-fondo">
+                  <Link href={`/admin/mantenimientos/${t.id}`} className="grid grid-cols-[1fr_100px] items-center gap-3 px-4 py-2.5 hover:bg-fondo">
                     <span className="min-w-0">
                       <span className="block truncate text-sm font-semibold">Nº {t.numero} · {t.titulo}</span>
                       <span className="block truncate text-xs text-tinta-2">{cliente.razonSocial}</span>

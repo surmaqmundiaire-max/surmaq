@@ -42,7 +42,7 @@ export default function Pendientes() {
                   <div className="min-w-0 flex-1">
                     <p className={cx("font-semibold", p.resueltoEn && "text-tinta-3 line-through")}>{p.descripcion}</p>
                     <p className="text-sm text-tinta-2">
-                      <Link href={`/admin/trabajos/${trabajo.id}`} className="text-marca-700 hover:underline">Nº {trabajo.numero}</Link> · {cliente.razonSocial} · {perfil(trabajo.asignadoId).nombre}
+                      <Link href={`/admin/mantenimientos/${trabajo.id}`} className="text-marca-700 hover:underline">Nº {trabajo.numero}</Link> · {cliente.razonSocial} · {perfil(trabajo.asignadoId).nombre}
                     </p>
                   </div>
                   <Badge tono={p.responsable === "cliente" ? "aviso" : "info"}>{p.responsable === "cliente" ? "Cliente" : "Surmaq"}</Badge>
