@@ -7,10 +7,11 @@ import { cliente as getCliente, equipo as getEquipo, perfil } from "@/lib/select
 import { diasEntre, fechaCorta, fechaLarga } from "@/lib/format";
 import { TIPO_LABEL } from "@/lib/mock-data";
 import { Badge, EstadoTrabajoBadge, Vacio, cx } from "./ui";
+import { LectorPlaca, SlotFoto, aplicarLectura } from "./fotos-equipo";
 
 /** Ficha del equipo con su historial: compartida entre técnico y administración. */
 export function FichaEquipo({ id, base }: { id: string; base: "tecnico" | "admin" }) {
-  const { trabajos, visitas, ahora } = useStore();
+  const { trabajos, visitas, ahora, actualizarEquipo } = useStore();
   const e = getEquipo(id);
   const c = getCliente(e.clienteId);
   const hoy = ahora.slice(0, 10);
@@ -39,6 +40,15 @@ export function FichaEquipo({ id, base }: { id: string; base: "tecnico" | "admin
             ["Año", e.anio ? String(e.anio) : "—"],
             ["Línea", e.lineaProducto],
             ["Horas de uso", e.horasUso ? e.horasUso.toLocaleString("es-EC") + " h" : "—"],
+            ...([
+              ["Potencia", e.datosPlaca?.potencia],
+              ["Voltaje", e.datosPlaca?.voltaje],
+              ["Frecuencia", e.datosPlaca?.frecuencia],
+              ["Corriente", e.datosPlaca?.corriente],
+              ["Presión máx.", e.datosPlaca?.presionMax],
+              ["Caudal", e.datosPlaca?.caudal],
+              ...(e.datosPlaca?.otros ?? []).map((o) => [o.etiqueta, o.valor]),
+            ].filter(([, v]) => v) as [string, string][]),
           ].map(([k, val]) => (
             <div key={k}>
               <dt className="text-tinta-3">{k}</dt>
@@ -46,6 +56,14 @@ export function FichaEquipo({ id, base }: { id: string; base: "tecnico" | "admin
             </div>
           ))}
         </dl>
+      </section>
+
+      <section className="rounded-2xl border border-borde bg-superficie p-4" aria-label="Fotos del equipo">
+        <div className="grid grid-cols-2 gap-3">
+          <SlotFoto titulo="Equipo" url={e.fotoUrl} onFoto={(f) => actualizarEquipo(e.id, { fotoUrl: f })} />
+          <SlotFoto titulo="Placa de datos" url={e.fotoPlacaUrl} ayuda="De frente y sin reflejos" onFoto={(f) => actualizarEquipo(e.id, { fotoPlacaUrl: f })} />
+        </div>
+        <LectorPlaca key={e.fotoPlacaUrl?.slice(-32)} foto={e.fotoPlacaUrl} onAplicar={(l) => actualizarEquipo(e.id, aplicarLectura(l))} />
       </section>
 
       {e.proximoMantenimiento && dias !== undefined && (

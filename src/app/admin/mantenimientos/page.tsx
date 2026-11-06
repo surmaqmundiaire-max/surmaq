@@ -2,14 +2,13 @@
 
 import Link from "next/link";
 import { CalendarClock } from "lucide-react";
-import { equipos } from "@/lib/mock-data";
 import { cliente, perfil } from "@/lib/selectors";
 import { useStore } from "@/lib/store";
 import { diasEntre, fechaLarga } from "@/lib/format";
 import { Badge } from "@/components/ui";
 
 export default function Mantenimientos() {
-  const { ahora } = useStore();
+  const { ahora, equipos } = useStore();
   const hoy = ahora.slice(0, 10);
   const lista = equipos
     .filter((e) => e.proximoMantenimiento)

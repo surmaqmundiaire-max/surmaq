@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { use } from "react";
 import { ArrowLeft, Mail, MapPin, Phone } from "lucide-react";
-import { clientes, equipos } from "@/lib/mock-data";
+import { clientes } from "@/lib/mock-data";
 import { perfil } from "@/lib/selectors";
 import { useStore } from "@/lib/store";
 import { diasEntre, fechaCorta } from "@/lib/format";
@@ -11,7 +11,7 @@ import { Badge } from "@/components/ui";
 
 export default function ClienteDetalle({ params }: { params: Promise<{ id: string }> }) {
   const { id } = use(params);
-  const { ahora, trabajos } = useStore();
+  const { ahora, trabajos, equipos } = useStore();
   const c = clientes.find((x) => x.id === id);
   if (!c) return <p>No se encontró el cliente.</p>;
   const eqs = equipos.filter((e) => e.clienteId === id);

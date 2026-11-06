@@ -16,7 +16,7 @@ const NAV = [
 export default function TecnicoLayout({ children }: { children: React.ReactNode }) {
   const path = usePathname();
   const { tecnicoActualId, setTecnicoActual, pendientes, trabajos } = useStore();
-  const enVisita = path.startsWith("/tecnico/visita/");
+  const enVisita = path.startsWith("/tecnico/visita/") || path === "/tecnico/equipos/nuevo";
   const misTrabajos = new Set(trabajos.filter((t) => t.asignadoId === tecnicoActualId).map((t) => t.id));
   const nPend = pendientes.filter((p) => !p.resueltoEn && misTrabajos.has(p.trabajoId)).length;
 

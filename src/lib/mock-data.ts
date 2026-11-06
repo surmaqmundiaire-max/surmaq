@@ -26,6 +26,18 @@ export const CHECKLISTS: Record<TipoTrabajo, string[]> = {
   ensamblaje: ["Revisión de piezas", "Ensamble", "Torque de pernos", "Prueba final"],
 };
 
+export const LINEAS_PRODUCTO = [
+  "Compresores de Tornillo",
+  "Compresores de Pistón",
+  "Tratamiento de Aire",
+  "Tuberías de Aire",
+  "Equipo pintura en polvo",
+  "Equipo pintura líquido",
+  "Automatización",
+  "Instrumentación",
+  "Otro",
+];
+
 export const TIPO_LABEL: Record<TipoTrabajo, string> = {
   mantenimiento: "Mantenimiento",
   revision: "Revisión",

@@ -2,14 +2,14 @@
 
 import Link from "next/link";
 import { useState } from "react";
-import { clientes, equipos } from "@/lib/mock-data";
+import { clientes } from "@/lib/mock-data";
 import { perfil } from "@/lib/selectors";
 import { useStore } from "@/lib/store";
 import { Badge, Vacio } from "@/components/ui";
 import { Buscador, Selector, norm } from "@/components/filtros";
 
 export default function Clientes() {
-  const { trabajos } = useStore();
+  const { trabajos, equipos } = useStore();
   const [q, setQ] = useState("");
   const [ciudad, setCiudad] = useState("todas");
   const ciudades = [...new Set(clientes.map((c) => c.ciudad))].sort();

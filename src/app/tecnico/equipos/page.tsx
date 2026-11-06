@@ -2,14 +2,15 @@
 
 import Link from "next/link";
 import { useState } from "react";
-import { ChevronRight, QrCode, Search } from "lucide-react";
-import { equipos } from "@/lib/mock-data";
+import { ChevronRight, Plus, QrCode, Search } from "lucide-react";
+import { useStore } from "@/lib/store";
 import { cliente } from "@/lib/selectors";
 import { Vacio } from "@/components/ui";
 
 const norm = (s: string) => s.normalize("NFD").replace(/[̀-ͯ]/g, "").toLowerCase();
 
 export default function EquiposTecnico() {
+  const { equipos } = useStore();
   const [q, setQ] = useState("");
   const [escaneo, setEscaneo] = useState(false);
   const lista = equipos.filter((e) => {
@@ -28,6 +29,9 @@ export default function EquiposTecnico() {
         >
           <QrCode size={22} /> Escanear código QR
         </button>
+        <Link href="/tecnico/equipos/nuevo" className="mt-2 flex min-h-12 w-full items-center justify-center gap-2 rounded-2xl border border-white/30 font-semibold text-white active:bg-white/10">
+          <Plus size={20} /> Agregar equipo nuevo
+        </Link>
       </header>
 
       {escaneo && (

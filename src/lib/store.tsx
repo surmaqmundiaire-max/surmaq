@@ -4,13 +4,15 @@
 // estas acciones se reemplazan por llamadas a la base de datos.
 import { createContext, useCallback, useContext, useEffect, useMemo, useState } from "react";
 import * as mock from "./mock-data";
-import type { Pendiente, Trabajo, Visita } from "./types";
+import type { Equipo, Pendiente, Trabajo, Visita } from "./types";
+import { registro } from "./selectors";
 import { toLocalIso } from "./format";
 
 interface Estado {
   visitas: Visita[];
   pendientes: Pendiente[];
   trabajos: Trabajo[];
+  equipos: Equipo[];
   tecnicoActualId: string;
 }
 
@@ -18,10 +20,11 @@ const inicial = (): Estado => ({
   visitas: mock.visitas,
   pendientes: mock.pendientes,
   trabajos: mock.trabajos,
+  equipos: mock.equipos,
   tecnicoActualId: "u-hchicazawa",
 });
 
-const KEY = "optimum-maqueta-v1";
+const KEY = "optimum-maqueta-v2";
 
 function useAcciones(set: React.Dispatch<React.SetStateAction<Estado>>, ahora: () => string) {
   const patchVisita = useCallback(
@@ -55,6 +58,13 @@ function useAcciones(set: React.Dispatch<React.SetStateAction<Estado>>, ahora: (
       agregarFoto: (id: string, url: string, momento: "antes" | "despues") =>
         patchVisita(id, (v) => ({ fotos: [...v.fotos, { url, momento }] })),
       quitarFoto: (id: string, idx: number) => patchVisita(id, (v) => ({ fotos: v.fotos.filter((_, i) => i !== idx) })),
+      agregarEquipo: (e: Omit<Equipo, "id" | "codigoQr">) => {
+        const id = `e-${Date.now()}`;
+        set((s) => ({ ...s, equipos: [...s.equipos, { ...e, id, codigoQr: `OS-${id.slice(-5).toUpperCase()}` }] }));
+        return id;
+      },
+      actualizarEquipo: (id: string, cambios: Partial<Equipo>) =>
+        set((s) => ({ ...s, equipos: s.equipos.map((e) => (e.id === id ? { ...e, ...cambios } : e)) })),
       agregarVisita: (v: Omit<Visita, "id">) =>
         set((s) => ({ ...s, visitas: [...s.visitas, { ...v, id: `v-${Date.now()}` }] })),
       agregarPendiente:(p: Omit<Pendiente, "id" | "creadoEn">) =>
@@ -118,6 +128,7 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
   }, [estado, cargado]);
 
   const acciones = useAcciones(setEstado, ahora);
+  registro.equipos = estado.equipos; // los selectores leen los equipos vigentes
   return <StoreCtx.Provider value={{ ...estado, ...acciones, ahora: ahoraStr }}>{children}</StoreCtx.Provider>;
 }
 

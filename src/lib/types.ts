@@ -42,6 +42,9 @@ export interface Equipo {
   serie: string;
   anio?: number;
   codigoQr: string;
+  fotoUrl?: string; // foto del equipo
+  fotoPlacaUrl?: string; // foto de la placa de datos
+  datosPlaca?: DatosPlaca; // datos técnicos leídos de la placa
   proximoMantenimiento?: string; // ISO date
   horasUso?: number;
   puestaEnMarcha?: { fecha: string; tecnicoId: string; presion: number; temperatura: number; voltaje: number };
@@ -101,4 +104,15 @@ export interface Permiso {
   hasta: string;
   detalle: string;
   aprobado?: boolean;
+}
+
+/** Datos técnicos leídos de la placa (los que no se ven quedan vacíos). */
+export interface DatosPlaca {
+  potencia?: string;
+  voltaje?: string;
+  frecuencia?: string;
+  corriente?: string;
+  presionMax?: string;
+  caudal?: string;
+  otros?: { etiqueta: string; valor: string }[];
 }

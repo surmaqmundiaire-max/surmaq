@@ -4,7 +4,12 @@ import { diasEntre, horasEntre } from "./format";
 
 export const perfil = (id: string) => mock.perfiles.find((p) => p.id === id)!;
 export const cliente = (id: string) => mock.clientes.find((c) => c.id === id)!;
-export const equipo = (id: string) => mock.equipos.find((e) => e.id === id)!;
+import type { Equipo } from "./types";
+
+/** Equipos vigentes: el StoreProvider lo actualiza en cada render con el estado de la maqueta. */
+export const registro: { equipos: Equipo[] } = { equipos: mock.equipos };
+export const equipo = (id: string) => registro.equipos.find((e) => e.id === id)!;
+export const listaEquipos = () => registro.equipos;
 export const tecnicos = () => mock.perfiles.filter((p) => p.rol === "tecnico");
 
 export const contexto = (trabajos: Trabajo[], trabajoId: string) => {
@@ -62,7 +67,7 @@ export function alertas(visitas: Visita[], pendientes: Pendiente[], trabajos: Tr
       out.push({ id: `atraso-${v.id}`, nivel: "advertencia", titulo: `${tec} no ha iniciado una visita`, detalle: `Programada a las ${v.programadaInicio.slice(11, 16)} · ${v.descripcion}`, href });
     }
   }
-  for (const e of mock.equipos) {
+  for (const e of registro.equipos) {
     if (e.proximoMantenimiento && e.proximoMantenimiento < hoy) {
       const c = cliente(e.clienteId);
       out.push({ id: `mant-${e.id}`, nivel: "critica", titulo: `Mantenimiento vencido hace ${diasEntre(e.proximoMantenimiento, hoy)} días`, detalle: `${e.nombre} · ${c.razonSocial}`, href: `/admin/equipos/${e.id}` });
