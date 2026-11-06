@@ -80,3 +80,8 @@ body {
 @media (prefers-reduced-motion: reduce) {
   .aviso-entrada, .pulso { animation: none; }
 }
+
+@media print {
+  aside, nav[aria-label="Secciones"], [role="region"][aria-label="Recordatorios"] { display: none !important; }
+  body { background: white; }
+}

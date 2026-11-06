@@ -21,7 +21,7 @@ export default function TecnicoLayout({ children }: { children: React.ReactNode 
   const path = usePathname();
   const { tecnicoActualId, setTecnicoActual, pendientes, trabajos } = useStore();
   useEffect(registrarNavegacion, [path]);
-  const enVisita = path.startsWith("/tecnico/visita/") || path.endsWith("/nuevo");
+  const enVisita = path.startsWith("/tecnico/visita/") || path.endsWith("/nuevo") || path.includes("/puesta/");
   const misTrabajos = new Set(trabajos.filter((t) => t.asignadoId === tecnicoActualId).map((t) => t.id));
   const nPend = pendientes.filter((p) => !p.resueltoEn && misTrabajos.has(p.trabajoId)).length;
 

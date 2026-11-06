@@ -4,7 +4,7 @@
 // estas acciones se reemplazan por llamadas a la base de datos.
 import { createContext, useCallback, useContext, useEffect, useMemo, useState } from "react";
 import * as mock from "./mock-data";
-import type { Cliente, Equipo, Pendiente, Perfil, Solicitud, TipoTrabajo, Trabajo, Visita } from "./types";
+import type { Cliente, Equipo, Pendiente, Perfil, PuestaEnMarcha, Solicitud, TipoTrabajo, Trabajo, Visita } from "./types";
 import { registro } from "./selectors";
 import { toLocalIso } from "./format";
 
@@ -16,6 +16,7 @@ interface Estado {
   clientes: Cliente[];
   perfiles: Perfil[];
   solicitudes: Solicitud[];
+  puestas: PuestaEnMarcha[];
   tecnicoActualId: string;
   /** Usuario con sesión iniciada en el panel (administrador, jefe o coordinador) */
   usuarioActualId: string;
@@ -29,11 +30,12 @@ const inicial = (): Estado => ({
   clientes: mock.clientes,
   perfiles: mock.perfiles,
   solicitudes: mock.solicitudes,
+  puestas: [],
   tecnicoActualId: "u-hchicazawa",
   usuarioActualId: "u-admin",
 });
 
-const KEY = "optimum-maqueta-v5";
+const KEY = "optimum-maqueta-v6";
 
 function useAcciones(set: React.Dispatch<React.SetStateAction<Estado>>, ahora: () => string) {
   const patchVisita = useCallback(
@@ -125,6 +127,20 @@ function useAcciones(set: React.Dispatch<React.SetStateAction<Estado>>, ahora: (
         });
         return trabajoId;
       },
+      crearPuesta: (p: Omit<PuestaEnMarcha, "id" | "numero" | "creadaEn" | "estado" | "fotos">) => {
+        const id = `pem-${Date.now()}`;
+        set((s) => ({
+          ...s,
+          puestas: [...s.puestas, { ...p, id, numero: Math.max(1800, ...s.puestas.map((x) => x.numero)) + 1, creadaEn: ahora(), estado: "borrador", fotos: [] }],
+        }));
+        return id;
+      },
+      actualizarPuesta: (id: string, cambios: Partial<PuestaEnMarcha> | ((p: PuestaEnMarcha) => Partial<PuestaEnMarcha>)) =>
+        set((s) => ({ ...s, puestas: s.puestas.map((x) => (x.id === id ? { ...x, ...(typeof cambios === "function" ? cambios(x) : cambios) } : x)) })),
+      responderPuesta: (id: string, campo: string, valor: unknown) =>
+        set((s) => ({ ...s, puestas: s.puestas.map((x) => (x.id === id ? { ...x, respuestas: { ...x.respuestas, [campo]: valor } } : x)) })),
+      completarPuesta: (id: string) =>
+        set((s) => ({ ...s, puestas: s.puestas.map((x) => (x.id === id ? { ...x, estado: "completada", completadaEn: ahora() } : x)) })),
       marcarVista: (id: string) => patchVisita(id, { vistaPorTecnico: true }),
       iniciarVisita: (id: string, distanciaM: number) =>
         patchVisita(id, { estado: "en_curso", checkinEn: ahora(), checkinDistanciaM: distanciaM }),

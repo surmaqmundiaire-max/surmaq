@@ -9,6 +9,7 @@ import { diasEntre, fechaCorta, fechaLarga } from "@/lib/format";
 import { EstadoTrabajoBadge, Vacio, cx } from "./ui";
 import { LectorPlaca, SlotFoto, aplicarLectura } from "./fotos-equipo";
 import { Migas, rutas } from "./migas";
+import { SeccionPuestas } from "./puesta-en-marcha";
 
 /** Ficha del equipo con su historial: compartida entre técnico y administración. */
 export function FichaEquipo({ id, base }: { id: string; base: "tecnico" | "admin" }) {
@@ -118,6 +119,8 @@ export function FichaEquipo({ id, base }: { id: string; base: "tecnico" | "admin
           </ol>
         )}
       </section>
+
+      <SeccionPuestas equipoId={id} base={base} />
 
       <section className="rounded-2xl border border-borde bg-superficie p-4" aria-label="Fotos del equipo">
         <h2 className="mb-3 flex items-center gap-2 text-lg font-semibold"><Camera size={20} className="text-marca-700" /> Fotos y placa</h2>

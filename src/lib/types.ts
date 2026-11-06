@@ -158,3 +158,22 @@ export interface Solicitud {
   trabajoId?: string;
   cambioHora?: boolean; // se programó en otra fecha u hora que la requerida
 }
+
+/** Puesta en marcha guardada dentro de un equipo. */
+export interface PuestaEnMarcha {
+  id: string;
+  numero: number;
+  equipoId: string;
+  trabajoId?: string;
+  plantillaId: string;
+  estado: "borrador" | "completada";
+  respuestas: Record<string, unknown>;
+  tecnicos: string[];
+  responsableId: string;
+  creadaEn: string;
+  completadaEn?: string;
+  fotos: string[];
+  recibe?: { nombre: string; cedula: string };
+  firmaTecnico?: string;
+  firmaCliente?: string;
+}
