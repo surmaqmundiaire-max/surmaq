@@ -6,6 +6,7 @@ import { Building2, ChevronRight, Plus, QrCode, Search } from "lucide-react";
 import { useStore } from "@/lib/store";
 import { cliente as getCliente } from "@/lib/selectors";
 import { norm } from "@/components/filtros";
+import { Ficha, MiniaturaEquipo } from "@/components/visual";
 import { Vacio } from "@/components/ui";
 
 export default function ClientesTecnico() {
@@ -50,6 +51,7 @@ export default function ClientesTecnico() {
               {eqs.map((e) => (
                 <li key={e.id}>
                   <Link href={`/tecnico/equipos/${e.id}`} className="flex min-h-16 items-center gap-3 px-4 py-3 active:bg-marca-50">
+                    <MiniaturaEquipo linea={e.lineaProducto} foto={e.fotoUrl} size={40} />
                     <span className="min-w-0 flex-1">
                       <span className="block truncate font-semibold">{e.nombre}</span>
                       <span className="block truncate text-sm text-tinta-2">{getCliente(e.clienteId).razonSocial} · serie {e.serie}</span>
@@ -72,7 +74,7 @@ export default function ClientesTecnico() {
                 return (
                   <li key={c.id}>
                     <Link href={`/tecnico/clientes/${c.id}`} className="flex min-h-16 items-center gap-3 px-4 py-3 active:bg-marca-50">
-                      <Building2 size={20} className="shrink-0 text-tinta-3" />
+                      <Ficha icono={Building2} size={40} />
                       <span className="min-w-0 flex-1">
                         <span className="block truncate font-semibold">{c.razonSocial}</span>
                         <span className="block truncate text-sm text-tinta-2">{c.ciudad} · {n} {n === 1 ? "equipo" : "equipos"}{c.responsableId === tecnicoActualId ? " · a tu cargo" : ""}</span>

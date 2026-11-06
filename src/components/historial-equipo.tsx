@@ -1,12 +1,12 @@
 "use client";
 
 import Link from "next/link";
-import { CalendarClock, Plus, QrCode } from "lucide-react";
+import { CalendarClock, Camera, Plus, QrCode } from "lucide-react";
+import { ChipTipo, IconoTipo, MiniaturaEquipo } from "./visual";
 import { useStore } from "@/lib/store";
 import { cliente as getCliente, equipo as getEquipo, perfil } from "@/lib/selectors";
 import { diasEntre, fechaCorta, fechaLarga } from "@/lib/format";
-import { TIPO_LABEL } from "@/lib/mock-data";
-import { Badge, EstadoTrabajoBadge, Vacio, cx } from "./ui";
+import { EstadoTrabajoBadge, Vacio, cx } from "./ui";
 import { LectorPlaca, SlotFoto, aplicarLectura } from "./fotos-equipo";
 import { Migas, rutas } from "./migas";
 
@@ -25,7 +25,8 @@ export function FichaEquipo({ id, base }: { id: string; base: "tecnico" | "admin
       <Migas base={base} equipoId={id} />
       <section className="rounded-2xl border border-borde bg-superficie p-4">
         <div className="flex items-start justify-between gap-3">
-          <div className="min-w-0">
+          <MiniaturaEquipo linea={e.lineaProducto} foto={e.fotoUrl} size={56} />
+          <div className="min-w-0 flex-1">
             <h1 className="text-xl leading-tight font-bold">{e.nombre}</h1>
             <p className="mt-0.5 text-sm text-tinta-2">
               <Link className="text-marca-700 hover:underline" href={r.cliente(c.id)}>{c.razonSocial}</Link> · {c.ciudad}
@@ -61,14 +62,6 @@ export function FichaEquipo({ id, base }: { id: string; base: "tecnico" | "admin
         </dl>
       </section>
 
-      <section className="rounded-2xl border border-borde bg-superficie p-4" aria-label="Fotos del equipo">
-        <div className="grid grid-cols-2 gap-3">
-          <SlotFoto titulo="Equipo" url={e.fotoUrl} onFoto={(f) => actualizarEquipo(e.id, { fotoUrl: f })} />
-          <SlotFoto titulo="Placa de datos" url={e.fotoPlacaUrl} ayuda="De frente y sin reflejos" onFoto={(f) => actualizarEquipo(e.id, { fotoPlacaUrl: f })} />
-        </div>
-        <LectorPlaca key={e.fotoPlacaUrl?.slice(-32)} foto={e.fotoPlacaUrl} onAplicar={(l) => actualizarEquipo(e.id, aplicarLectura(l))} />
-      </section>
-
       {e.proximoMantenimiento && dias !== undefined && (
         <section className={cx("flex items-center gap-3 rounded-2xl p-4", dias < 0 ? "bg-critico-bg text-critico" : dias <= 14 ? "bg-aviso-bg text-aviso" : "bg-info-bg text-info")}>
           <CalendarClock size={22} className="shrink-0" />
@@ -85,7 +78,7 @@ export function FichaEquipo({ id, base }: { id: string; base: "tecnico" | "admin
         <div className="mb-2 flex items-center justify-between gap-2 px-1">
           <h2 className="text-lg font-semibold">Mantenimientos <span className="font-normal text-tinta-3 tabular">({historial.length})</span></h2>
           <Link href={r.nuevoMantenimiento(id)} className="inline-flex min-h-11 items-center gap-1.5 rounded-xl bg-marca-800 px-4 text-sm font-semibold text-white hover:bg-marca-900">
-            <Plus size={17} /> Nuevo mantenimiento
+            <Plus size={17} /> Nuevo<span className="hidden sm:inline"> mantenimiento</span>
           </Link>
         </div>
         {historial.length === 0 ? (
@@ -95,17 +88,20 @@ export function FichaEquipo({ id, base }: { id: string; base: "tecnico" | "admin
             {historial.map((t) => {
               const nVis = visitas.filter((v) => v.trabajoId === t.id).length;
               const contenido = (
-                <>
-                  <div className="flex items-center justify-between gap-2">
-                    <p className="font-semibold">{t.titulo}</p>
-                    <EstadoTrabajoBadge estado={t.estado} />
-                  </div>
-                  <p className="mt-1 flex flex-wrap items-center gap-x-2 text-sm text-tinta-2 tabular">
-                    <span>Nº {t.numero}</span>·<Badge>{TIPO_LABEL[t.tipo]}</Badge>·<span>{fechaCorta(t.fechaIngreso)}</span>·
-                    <span>{perfil(t.asignadoId).nombre}</span>·<span>{nVis} {nVis === 1 ? "tarea" : "tareas"}</span>
-                  </p>
-                  {t.estadoGeneralEquipo && <p className="mt-1 text-sm">Estado del equipo: {t.estadoGeneralEquipo}</p>}
-                </>
+                <span className="flex items-start gap-3">
+                  <IconoTipo tipo={t.tipo} size={40} />
+                  <span className="min-w-0 flex-1">
+                    <span className="flex items-start justify-between gap-2">
+                      <span className="font-semibold">{t.titulo}</span>
+                      <EstadoTrabajoBadge estado={t.estado} />
+                    </span>
+                    <span className="mt-1 flex flex-wrap items-center gap-x-2 gap-y-1 text-sm text-tinta-2 tabular">
+                      <ChipTipo tipo={t.tipo} /> <span>Nº {t.numero}</span>·<span>{fechaCorta(t.fechaIngreso)}</span>·
+                      <span>{perfil(t.asignadoId).nombre}</span>·<span>{nVis} {nVis === 1 ? "tarea" : "tareas"}</span>
+                    </span>
+                    {t.estadoGeneralEquipo && <span className="mt-1 block text-sm">Estado del equipo: {t.estadoGeneralEquipo}</span>}
+                  </span>
+                </span>
               );
               return (
                 <li key={t.id}>
@@ -116,6 +112,16 @@ export function FichaEquipo({ id, base }: { id: string; base: "tecnico" | "admin
           </ol>
         )}
       </section>
+
+      <section className="rounded-2xl border border-borde bg-superficie p-4" aria-label="Fotos del equipo">
+        <h2 className="mb-3 flex items-center gap-2 text-lg font-semibold"><Camera size={20} className="text-marca-700" /> Fotos y placa</h2>
+        <div className="grid grid-cols-2 gap-3">
+          <SlotFoto titulo="Equipo" url={e.fotoUrl} onFoto={(f) => actualizarEquipo(e.id, { fotoUrl: f })} />
+          <SlotFoto titulo="Placa de datos" url={e.fotoPlacaUrl} ayuda="De frente y sin reflejos" onFoto={(f) => actualizarEquipo(e.id, { fotoPlacaUrl: f })} />
+        </div>
+        <LectorPlaca key={e.fotoPlacaUrl?.slice(-32)} foto={e.fotoPlacaUrl} onAplicar={(l) => actualizarEquipo(e.id, aplicarLectura(l))} />
+      </section>
+
     </div>
   );
 }

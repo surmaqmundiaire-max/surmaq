@@ -6,11 +6,14 @@ import { Check } from "lucide-react";
 import { useStore } from "@/lib/store";
 import { contexto, perfil } from "@/lib/selectors";
 import { diasEntre, fechaCorta } from "@/lib/format";
-import { Badge, Vacio, cx } from "@/components/ui";
+import { Vacio, cx } from "@/components/ui";
+import { useAviso } from "@/components/aviso";
+import { ChipResponsable } from "@/components/visual";
 import { Selector } from "@/components/filtros";
 
 export default function Pendientes() {
   const s = useStore();
+  const aviso = useAviso();
   const [resp, setResp] = useState("todos");
   const [ver, setVer] = useState("abiertos");
   const hoy = s.ahora.slice(0, 10);
@@ -35,7 +38,7 @@ export default function Pendientes() {
               const dias = diasEntre(p.creadoEn, hoy);
               return (
                 <li key={p.id} className="flex items-center gap-3 px-4 py-3">
-                  <button type="button" role="checkbox" aria-checked={!!p.resueltoEn} aria-label={`Marcar «${p.descripcion}» como resuelto`} onClick={() => s.resolverPendiente(p.id)}
+                  <button type="button" role="checkbox" aria-checked={!!p.resueltoEn} aria-label={`Marcar «${p.descripcion}» como resuelto`} onClick={() => { s.resolverPendiente(p.id); aviso(p.resueltoEn ? "Pendiente reabierto" : "Pendiente resuelto", { texto: "Deshacer", onClick: () => s.resolverPendiente(p.id) }); }}
                     className={cx("flex h-7 w-7 shrink-0 items-center justify-center rounded-md border-2", p.resueltoEn ? "border-ok bg-ok text-white" : "border-tinta-3/50 hover:border-marca-700")}>
                     {p.resueltoEn && <Check size={15} strokeWidth={3} />}
                   </button>
@@ -45,7 +48,7 @@ export default function Pendientes() {
                       <Link href={`/admin/mantenimientos/${trabajo.id}`} className="text-marca-700 hover:underline">Nº {trabajo.numero}</Link> · {cliente.razonSocial} · {perfil(trabajo.asignadoId).nombre}
                     </p>
                   </div>
-                  <Badge tono={p.responsable === "cliente" ? "aviso" : "info"}>{p.responsable === "cliente" ? "Cliente" : "Surmaq"}</Badge>
+                  <ChipResponsable responsable={p.responsable} />
                   <span className={cx("w-24 text-right text-xs tabular", !p.resueltoEn && dias >= 3 ? "font-semibold text-aviso" : "text-tinta-3")}>
                     {p.resueltoEn ? `Resuelto ${fechaCorta(p.resueltoEn)}` : dias === 0 ? "Hoy" : `Hace ${dias} días`}
                   </span>

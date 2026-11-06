@@ -6,7 +6,8 @@ import { CalendarClock, CheckCircle2, ChevronLeft, ChevronRight, CircleDot, Cloc
 import { useStore } from "@/lib/store";
 import { contexto, cliente as getCliente, perfil } from "@/lib/selectors";
 import { fechaLarga, hora, horasEntre, toLocalIso } from "@/lib/format";
-import type { Visita } from "@/lib/types";
+import type { TipoTrabajo, Visita } from "@/lib/types";
+import { Ficha, IconoTipo } from "./visual";
 import { cx } from "./ui";
 import type { Base } from "./migas";
 
@@ -18,6 +19,7 @@ export interface Evento {
   titulo: string;
   detalle: string;
   tipo: TipoEvento;
+  tipoTrabajo?: TipoTrabajo;
   href: string;
 }
 
@@ -41,7 +43,7 @@ export function useEventos({ base, tecnicoId, ciudad, equiposDeClientes }: { bas
       v.estado === "finalizada" ? "finalizada" : v.estado === "en_curso" ? "en_curso" : horasEntre(v.programadaInicio, s.ahora) * 60 > 15 ? "atrasada" : "programada";
     for (const v of s.visitas) {
       if (v.estado === "cancelada" || (tecnicoId && v.tecnicoId !== tecnicoId)) continue;
-      const { cliente, equipo } = contexto(s.trabajos, v.trabajoId);
+      const { cliente, equipo, trabajo } = contexto(s.trabajos, v.trabajoId);
       if (ciudad && perfil(v.tecnicoId).ciudad !== ciudad) continue;
       // el historial generado solo tiene «Visita técnica»: se muestra igual, con el cliente como título
       ev.push({
@@ -51,6 +53,7 @@ export function useEventos({ base, tecnicoId, ciudad, equiposDeClientes }: { bas
         titulo: cliente.razonSocial,
         detalle: `${v.descripcion} · ${equipo.nombre}${base === "admin" ? ` · ${perfil(v.tecnicoId).nombre}` : ""}`,
         tipo: tipoDe(v),
+        tipoTrabajo: trabajo.tipo,
         href: base === "tecnico" ? `/tecnico/visita/${v.id}` : `/admin/mantenimientos/${v.trabajoId}`,
       });
     }
@@ -159,7 +162,8 @@ export function Calendario({ eventos, compacto }: { eventos: Evento[]; compacto?
             {delDia.map((e) => (
               <li key={e.id}>
                 <Link href={e.href} className="flex min-h-16 items-center gap-3 px-4 py-3 hover:bg-fondo active:bg-marca-50">
-                  <span className="w-12 shrink-0 text-sm font-semibold tabular">{e.hora ?? "—"}</span>
+                  <span className="w-11 shrink-0 text-sm font-semibold tabular">{e.hora ?? "—"}</span>
+                  {e.tipoTrabajo ? <IconoTipo tipo={e.tipoTrabajo} size={34} /> : <Ficha icono={CalendarClock} tono="aviso" size={34} />}
                   <span className="min-w-0 flex-1">
                     <span className="block truncate font-semibold">{e.titulo}</span>
                     <span className="block truncate text-sm text-tinta-2">{e.detalle}</span>

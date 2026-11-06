@@ -20,6 +20,7 @@ export const rutas = (base: Base) => ({
 export function Migas({ base, clienteId, equipoId, trabajoId, oscuro }: { base: Base; clienteId?: string; equipoId?: string; trabajoId?: string; oscuro?: boolean }) {
   const { trabajos } = useStore();
   const r = rutas(base);
+  if (base === "tecnico") return null; // en el celular se usa el botón grande «volver» (BarraVolver)
   const t = trabajoId ? trabajos.find((x) => x.id === trabajoId) : undefined;
   const eId = equipoId ?? t?.equipoId;
   const e = eId ? getEquipo(eId) : undefined;

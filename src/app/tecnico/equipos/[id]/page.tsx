@@ -1,9 +1,19 @@
 "use client";
 
 import { use } from "react";
+import { useStore } from "@/lib/store";
 import { FichaEquipo } from "@/components/historial-equipo";
+import { BarraVolver } from "@/components/barra-tecnico";
 
 export default function EquipoTecnico({ params }: { params: Promise<{ id: string }> }) {
   const { id } = use(params);
-  return <div className="px-4 py-4"><FichaEquipo id={id} base="tecnico" /></div>;
+  const { equipos, clientes } = useStore();
+  const e = equipos.find((x) => x.id === id);
+  const c = e && clientes.find((x) => x.id === e.clienteId);
+  return (
+    <div className="px-4 pt-2 pb-4">
+      <BarraVolver etiqueta={c?.razonSocial ?? "Clientes"} respaldo={c ? `/tecnico/clientes/${c.id}` : "/tecnico/clientes"} />
+      <FichaEquipo id={id} base="tecnico" />
+    </div>
+  );
 }

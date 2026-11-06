@@ -1,11 +1,11 @@
 "use client";
 
 import Link from "next/link";
-import { ChevronRight, MapPin, Navigation, Play, Timer } from "lucide-react";
+import { CalendarDays, CheckCircle2, ChevronRight, Clock, MapPin, Navigation, Play, Plus, Timer, type LucideIcon } from "lucide-react";
+import { ChipTipo, IconoTipo } from "@/components/visual";
 import { useStore } from "@/lib/store";
 import { contexto, horasVisita, perfil } from "@/lib/selectors";
 import { duracion, fechaLarga, fechaCorta, hora, horasEntre } from "@/lib/format";
-import { TIPO_LABEL } from "@/lib/mock-data";
 import type { Visita } from "@/lib/types";
 import { Jornada } from "@/components/jornada";
 import { Conexion } from "@/components/conexion";
@@ -51,20 +51,24 @@ export default function Hoy() {
         )}
 
         {resto.length > 0 && (
-          <Seccion titulo="Más tarde hoy">
+          <Seccion titulo="Más tarde hoy" icono={Clock}>
             {resto.map((v) => <Fila key={v.id} v={v} />)}
           </Seccion>
         )}
         {terminadas.length > 0 && (
-          <Seccion titulo="Terminadas hoy">
+          <Seccion titulo="Terminadas hoy" icono={CheckCircle2}>
             {terminadas.map((v) => <Fila key={v.id} v={v} />)}
           </Seccion>
         )}
         {proximas.length > 0 && (
-          <Seccion titulo="Próximos días">
+          <Seccion titulo="Próximos días" icono={CalendarDays}>
             {proximas.map((v) => <Fila key={v.id} v={v} conFecha />)}
           </Seccion>
         )}
+
+        <Link href="/tecnico/mantenimientos/nuevo" className="flex min-h-14 items-center justify-center gap-2 rounded-2xl border-2 border-dashed border-marca-600/40 font-semibold text-marca-800 active:bg-marca-50">
+          <Plus size={20} /> Trabajo no programado
+        </Link>
       </div>
     </div>
   );
@@ -103,10 +107,15 @@ export default function Hoy() {
               <span className="text-sm font-semibold tabular">{hora(v.programadaInicio)} – {hora(v.programadaFin)}</span>
             )}
           </div>
-          <p className="mt-2 text-xl leading-tight font-bold">{cliente.razonSocial}</p>
-          <p className="mt-1 text-[15px] text-tinta-2">{v.descripcion}</p>
-          <p className="mt-2 flex flex-wrap items-center gap-x-2 gap-y-1 text-sm text-tinta-2">
-            <Badge tono="neutro">{TIPO_LABEL[trabajo.tipo]}</Badge>
+          <div className="mt-3 flex items-start gap-3">
+            <IconoTipo tipo={trabajo.tipo} size={48} />
+            <div className="min-w-0">
+              <p className="text-xl leading-tight font-bold">{cliente.razonSocial}</p>
+              <p className="mt-1 text-[15px] text-tinta-2">{v.descripcion}</p>
+            </div>
+          </div>
+          <p className="mt-3 flex flex-wrap items-center gap-x-2 gap-y-1 text-sm text-tinta-2">
+            <ChipTipo tipo={trabajo.tipo} />
             <span>{equipo.nombre}</span>
           </p>
           {!enCursoV && (
@@ -135,10 +144,11 @@ export default function Hoy() {
   }
 
   function Fila({ v, conFecha }: { v: Visita; conFecha?: boolean }) {
-    const { cliente } = contexto(trabajos, v.trabajoId);
+    const { cliente, trabajo } = contexto(trabajos, v.trabajoId);
     return (
       <li>
         <Link href={`/tecnico/visita/${v.id}`} className="flex min-h-16 items-center gap-3 px-4 py-3 transition-colors hover:bg-fondo active:bg-marca-50">
+          <IconoTipo tipo={trabajo.tipo} size={36} />
           <div className="w-14 shrink-0 text-sm font-semibold tabular">
             {conFecha && <span className="block text-xs font-medium text-tinta-3">{fechaCorta(v.programadaInicio)}</span>}
             {hora(v.checkinEn ?? v.programadaInicio)}
@@ -159,10 +169,10 @@ export default function Hoy() {
   }
 }
 
-function Seccion({ titulo, children }: { titulo: string; children: React.ReactNode }) {
+function Seccion({ titulo, icono: I, children }: { titulo: string; icono: LucideIcon; children: React.ReactNode }) {
   return (
     <section>
-      <h2 className="mb-2 px-1 text-sm font-semibold text-tinta-2">{titulo}</h2>
+      <h2 className="mb-2 flex items-center gap-1.5 px-1 text-sm font-semibold text-tinta-2"><I size={16} className="text-marca-700" /> {titulo}</h2>
       <ul className="divide-y divide-borde overflow-hidden rounded-2xl border border-borde bg-superficie">{children}</ul>
     </section>
   );

@@ -5,9 +5,11 @@ import { useStore } from "@/lib/store";
 import { contexto } from "@/lib/selectors";
 import { fechaCorta } from "@/lib/format";
 import { Vacio, cx } from "@/components/ui";
+import { useAviso } from "@/components/aviso";
 
 export default function PendientesTecnico() {
   const { pendientes, trabajos, tecnicoActualId, resolverPendiente } = useStore();
+  const aviso = useAviso();
   const mios = new Set(trabajos.filter((t) => t.asignadoId === tecnicoActualId).map((t) => t.id));
   const lista = pendientes.filter((p) => mios.has(p.trabajoId)).sort((a, b) => Number(!!a.resueltoEn) - Number(!!b.resueltoEn));
   return (
@@ -26,7 +28,7 @@ export default function PendientesTecnico() {
               const ok = !!p.resueltoEn;
               return (
                 <li key={p.id}>
-                  <button type="button" role="checkbox" aria-checked={ok} onClick={() => resolverPendiente(p.id)} className="flex min-h-16 w-full items-start gap-3 px-4 py-3 text-left active:bg-marca-50">
+                  <button type="button" role="checkbox" aria-checked={ok} onClick={() => { resolverPendiente(p.id); aviso(ok ? "Pendiente reabierto" : "Pendiente resuelto", { texto: "Deshacer", onClick: () => resolverPendiente(p.id) }); }} className="flex min-h-16 w-full items-start gap-3 px-4 py-3 text-left active:bg-marca-50">
                     <span className={cx("mt-0.5 flex h-7 w-7 shrink-0 items-center justify-center rounded-full border-2", ok ? "border-ok bg-ok text-white" : "border-tinta-3/50")}>
                       {ok && <Check size={16} strokeWidth={3} />}
                     </span>

@@ -1,6 +1,7 @@
 import type { Metadata, Viewport } from "next";
 import "./globals.css";
 import { StoreProvider } from "@/lib/store";
+import { AvisoProvider } from "@/components/aviso";
 
 export const metadata: Metadata = {
   title: "Optimum Service AI",
@@ -17,7 +18,9 @@ export default function RootLayout({ children }: Readonly<{ children: React.Reac
   return (
     <html lang="es">
       <body className="antialiased">
-        <StoreProvider>{children}</StoreProvider>
+        <StoreProvider>
+          <AvisoProvider>{children}</AvisoProvider>
+        </StoreProvider>
       </body>
     </html>
   );

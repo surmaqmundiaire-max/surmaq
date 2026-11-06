@@ -7,6 +7,7 @@ import { perfil } from "@/lib/selectors";
 import { diasEntre, fechaCorta } from "@/lib/format";
 import { Badge, Vacio } from "./ui";
 import { Migas, rutas, type Base } from "./migas";
+import { MiniaturaEquipo } from "./visual";
 
 /** Empresa con todos sus equipos. Compartida entre administración y técnico. */
 export function FichaCliente({ id, base }: { id: string; base: Base }) {
@@ -62,12 +63,7 @@ export function FichaCliente({ id, base }: { id: string; base: Base }) {
               return (
                 <li key={e.id}>
                   <Link href={r.equipo(e.id)} className="flex items-center gap-3 px-4 py-3 hover:bg-fondo active:bg-marca-50">
-                    {e.fotoUrl ? (
-                      // eslint-disable-next-line @next/next/no-img-element
-                      <img src={e.fotoUrl} alt="" className="h-14 w-14 shrink-0 rounded-lg object-cover" />
-                    ) : (
-                      <span className="flex h-14 w-14 shrink-0 items-center justify-center rounded-lg bg-fondo text-xs text-tinta-3">Sin foto</span>
-                    )}
+                    <MiniaturaEquipo linea={e.lineaProducto} foto={e.fotoUrl} />
                     <span className="min-w-0 flex-1">
                       <span className="block font-semibold">{e.nombre}</span>
                       <span className="block text-sm text-tinta-2">{e.marca} {e.modelo} · {mts.length} mant.{ultimo ? ` · último ${fechaCorta(ultimo.fechaIngreso)}` : ""}</span>

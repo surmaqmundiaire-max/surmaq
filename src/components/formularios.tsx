@@ -12,6 +12,8 @@ import type { Equipo, LugarTrabajo, TipoTrabajo } from "@/lib/types";
 import { LectorPlaca, SlotFoto, aplicarLectura, type LecturaPlaca } from "./fotos-equipo";
 import { norm } from "./filtros";
 import { cx } from "./ui";
+import { useAviso } from "./aviso";
+import { TIPO_VISUAL } from "./visual";
 
 // ---------- piezas comunes ----------
 export const claseCampo =
@@ -125,6 +127,7 @@ const finDe = (fecha: string, hora: string, horas: number) => {
 // ---------- Empresa ----------
 export function FormCliente({ onGuardado }: { onGuardado: (id: string) => void }) {
   const { agregarCliente, tecnicoActualId } = useStore();
+  const aviso = useAviso();
   const [razon, setRazon] = useState("");
   const [ruc, setRuc] = useState("");
   const [ciudad, setCiudad] = useState("Guayaquil");
@@ -176,7 +179,8 @@ export function FormCliente({ onGuardado }: { onGuardado: (id: string) => void }
         texto="Guardar empresa"
         deshabilitado={!listo}
         ayuda={!rucOk ? "Revisa el RUC" : "Escribe la razón social"}
-        onClick={() =>
+        onClick={() => {
+          aviso(`Empresa «${razon.trim()}» guardada`);
           onGuardado(
             agregarCliente({
               razonSocial: razon.trim(),
@@ -190,8 +194,8 @@ export function FormCliente({ onGuardado }: { onGuardado: (id: string) => void }
               recurrente: false,
               contacto: { nombre: contacto || "—", telefono },
             }),
-          )
-        }
+          );
+        }}
       />
     </div>
   );
@@ -200,6 +204,7 @@ export function FormCliente({ onGuardado }: { onGuardado: (id: string) => void }
 // ---------- Equipo ----------
 export function FormEquipo({ clienteInicial, onGuardado }: { clienteInicial?: string; onGuardado: (id: string) => void }) {
   const { agregarEquipo, clientes } = useStore();
+  const aviso = useAviso();
   const [clienteId, setClienteId] = useState(clienteInicial ?? "");
   const [qCliente, setQCliente] = useState("");
   const [fotoPlaca, setFotoPlaca] = useState<string>();
@@ -285,7 +290,8 @@ export function FormEquipo({ clienteInicial, onGuardado }: { clienteInicial?: st
         texto="Guardar equipo"
         deshabilitado={!clienteId || !nombre.trim()}
         ayuda={!clienteId ? "Elige la empresa" : "Escribe el nombre del equipo o lee la placa"}
-        onClick={() =>
+        onClick={() => {
+          aviso(`Equipo «${nombre.trim()}» guardado`);
           onGuardado(
             agregarEquipo({
               clienteId,
@@ -299,8 +305,8 @@ export function FormEquipo({ clienteInicial, onGuardado }: { clienteInicial?: st
               fotoUrl: fotoEquipo,
               fotoPlacaUrl: fotoPlaca,
             }),
-          )
-        }
+          );
+        }}
       />
     </div>
   );
@@ -309,6 +315,7 @@ export function FormEquipo({ clienteInicial, onGuardado }: { clienteInicial?: st
 // ---------- Mantenimiento ----------
 export function FormMantenimiento({ equipoInicial, base, onGuardado }: { equipoInicial?: string; base: "admin" | "tecnico"; onGuardado: (id: string) => void }) {
   const s = useStore();
+  const aviso = useAviso();
   const [equipoId, setEquipoId] = useState(equipoInicial ?? "");
   const [qEq, setQEq] = useState("");
   const [tipo, setTipo] = useState<TipoTrabajo>("mantenimiento");
@@ -358,7 +365,25 @@ export function FormMantenimiento({ equipoInicial, base, onGuardado }: { equipoI
       <section className="space-y-4">
         <div>
           <p className="text-sm font-medium text-tinta-2">Tipo</p>
-          <Chips etiqueta="Tipo" opciones={Object.entries(TIPO_LABEL) as [TipoTrabajo, string][]} valor={tipo} onChange={setTipo} />
+          <div role="radiogroup" aria-label="Tipo" className="mt-1.5 grid grid-cols-2 gap-2 sm:grid-cols-5">
+            {(Object.keys(TIPO_LABEL) as TipoTrabajo[]).map((k) => {
+              const V = TIPO_VISUAL[k];
+              const I = V.icono;
+              const activo = tipo === k;
+              return (
+                <button
+                  key={k}
+                  type="button"
+                  role="radio"
+                  aria-checked={activo}
+                  onClick={() => setTipo(k)}
+                  className={cx("flex min-h-16 flex-col items-center justify-center gap-1 rounded-xl border-2 px-2 text-sm font-semibold transition-colors", activo ? cx("border-transparent text-white", V.solido) : cx("border-borde bg-superficie", V.texto))}
+                >
+                  <I size={22} strokeWidth={2.2} /> {TIPO_LABEL[k]}
+                </button>
+              );
+            })}
+          </div>
         </div>
         <Campo label="Título">
           <input value={titulo} onChange={(ev) => setTitulo(ev.target.value)} placeholder={tituloFinal || "Describe el mantenimiento"} className={claseCampo} />
@@ -401,6 +426,7 @@ export function FormMantenimiento({ equipoInicial, base, onGuardado }: { equipoI
             checklist: Object.fromEntries(CHECKLISTS[tipo].map((k) => [k, false])),
             fotos: [],
           });
+          aviso(`Mantenimiento creado · primera tarea el ${fechaCorta(fecha)} a las ${horaIni}`);
           onGuardado(id);
         }}
       />
@@ -412,6 +438,7 @@ export function FormMantenimiento({ equipoInicial, base, onGuardado }: { equipoI
 export function FormTarea({ trabajoId, onGuardado, onCancelar }: { trabajoId: string; onGuardado: (id: string) => void; onCancelar?: () => void }) {
   const s = useStore();
   const t = s.trabajos.find((x) => x.id === trabajoId)!;
+  const aviso = useAviso();
   const [fIni, hIni] = useInicioSugerido();
   const [desc, setDesc] = useState("");
   const [tecnico, setTecnico] = useState(t.asignadoId);
@@ -436,7 +463,8 @@ export function FormTarea({ trabajoId, onGuardado, onCancelar }: { trabajoId: st
         <button
           type="button"
           disabled={!desc.trim()}
-          onClick={() =>
+          onClick={() => {
+            aviso(`Tarea agendada · ${fechaCorta(fecha)} a las ${horaIni}`);
             onGuardado(
               s.agregarVisita({
                 trabajoId,
@@ -451,8 +479,8 @@ export function FormTarea({ trabajoId, onGuardado, onCancelar }: { trabajoId: st
                 checklist: Object.fromEntries(CHECKLISTS[t.tipo].map((k) => [k, false])),
                 fotos: [],
               }),
-            )
-          }
+            );
+          }}
           className="min-h-12 rounded-xl bg-marca-800 font-semibold text-white hover:bg-marca-900 disabled:bg-tinta-3/40"
         >
           Agendar tarea

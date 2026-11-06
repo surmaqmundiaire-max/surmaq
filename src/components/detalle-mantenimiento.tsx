@@ -6,9 +6,9 @@ import { CalendarPlus, Camera, Car, Check, ChevronRight, Clock3, MapPin, PenLine
 import { useStore } from "@/lib/store";
 import { avanceTrabajo, contexto, horasVisita, perfil, UMBRAL_DISTANCIA_M } from "@/lib/selectors";
 import { duracion, fechaCorta, fechaLarga, hora, metros } from "@/lib/format";
-import { TIPO_LABEL } from "@/lib/mock-data";
 import { Avatar, Badge, Barra, EstadoTrabajoBadge, EstadoVisitaBadge, Vacio, cx } from "./ui";
 import { Migas, rutas, type Base } from "./migas";
+import { ChipResponsable, ChipTipo, IconoTipo } from "./visual";
 import { FormTarea } from "./formularios";
 
 /** Detalle de un mantenimiento con sus tareas. Compartido entre administración y técnico. */
@@ -19,7 +19,11 @@ export function DetalleMantenimiento({ id, base }: { id: string; base: Base }) {
   const t = s.trabajos.find((x) => x.id === id);
   if (!t) return <p>No se encontró el mantenimiento.</p>;
   const { equipo, cliente } = contexto(s.trabajos, id);
-  const vis = s.visitas.filter((v) => v.trabajoId === id).sort((a, b) => b.programadaInicio.localeCompare(a.programadaInicio));
+  // Primero lo que hay que hacer (en curso, luego próximas), al final lo ya hecho
+  const orden = { en_curso: 0, programada: 1, finalizada: 2, cancelada: 3 } as const;
+  const vis = s.visitas
+    .filter((v) => v.trabajoId === id)
+    .sort((a, b) => orden[a.estado] - orden[b.estado] || (a.estado === "finalizada" ? b.programadaInicio.localeCompare(a.programadaInicio) : a.programadaInicio.localeCompare(b.programadaInicio)));
   const pend = s.pendientes.filter((p) => p.trabajoId === id);
   const horas = vis.reduce((a, v) => a + (v.checkoutEn ? horasVisita(v, s.ahora) : 0), 0);
   const av = avanceTrabajo(t, s.visitas);
@@ -29,8 +33,10 @@ export function DetalleMantenimiento({ id, base }: { id: string; base: Base }) {
       <Migas base={base} trabajoId={id} />
 
       <header className="flex flex-wrap items-start justify-between gap-4">
-        <div>
-          <p className="text-sm text-tinta-2 tabular">Mantenimiento Nº {t.numero}</p>
+        <div className="flex min-w-0 flex-1 items-start gap-3">
+        <IconoTipo tipo={t.tipo} size={48} />
+        <div className="min-w-0">
+          <p className="flex flex-wrap items-center gap-2 text-sm text-tinta-2 tabular"><span>Mantenimiento Nº {t.numero}</span> <ChipTipo tipo={t.tipo} /></p>
           <h1 className="text-2xl font-bold">{t.titulo}</h1>
           <p className="mt-1 text-tinta-2">
             <Link href={r.cliente(cliente.id)} className="font-medium text-marca-700 hover:underline">{cliente.razonSocial}</Link>
@@ -38,20 +44,20 @@ export function DetalleMantenimiento({ id, base }: { id: string; base: Base }) {
             <Link href={r.equipo(equipo.id)} className="font-medium text-marca-700 hover:underline">{equipo.nombre}</Link>
           </p>
         </div>
+        </div>
         <EstadoTrabajoBadge estado={t.estado} />
       </header>
 
-      <section className="grid gap-4 rounded-2xl border border-borde bg-superficie p-4 text-sm sm:grid-cols-3 lg:grid-cols-6">
-        <Dato k="Tipo" v={TIPO_LABEL[t.tipo]} />
+      <section className="grid grid-cols-2 gap-4 rounded-2xl border border-borde bg-superficie p-4 text-sm sm:grid-cols-3 lg:grid-cols-5">
         <Dato k="Técnico" v={perfil(t.asignadoId).nombre} />
         <Dato k="Ingreso" v={fechaCorta(t.fechaIngreso)} />
         <Dato k="Cierre" v={t.fechaCierre ? fechaCorta(t.fechaCierre) : "—"} />
         <Dato k="Horas totales" v={duracion(horas)} />
-        <div>
+        <div className="col-span-2 sm:col-span-1">
           <dt className="text-tinta-3">Avance</dt>
           <dd className="mt-1 flex items-center gap-2"><Barra valor={av} /><span className="font-semibold tabular">{av}%</span></dd>
         </div>
-        {t.estadoGeneralEquipo && <div className="sm:col-span-3 lg:col-span-6"><Dato k="Estado general del equipo" v={t.estadoGeneralEquipo} /></div>}
+        {t.estadoGeneralEquipo && <div className="col-span-2 sm:col-span-3 lg:col-span-5"><Dato k="Estado general del equipo" v={t.estadoGeneralEquipo} /></div>}
       </section>
 
       <section>
@@ -67,7 +73,7 @@ export function DetalleMantenimiento({ id, base }: { id: string; base: Base }) {
                     {p.resueltoEn && <Check size={14} strokeWidth={3} />}
                   </span>
                   <span className={cx("flex-1", p.resueltoEn && "text-tinta-3 line-through")}>{p.descripcion}</span>
-                  <Badge tono={p.responsable === "cliente" ? "aviso" : "info"}>{p.responsable === "cliente" ? "Cliente" : "Surmaq"}</Badge>
+                  <ChipResponsable responsable={p.responsable} />
                   <span className="w-16 text-right text-xs text-tinta-3 tabular">{fechaCorta(p.creadoEn)}</span>
                 </button>
               </li>
@@ -144,6 +150,11 @@ export function DetalleMantenimiento({ id, base }: { id: string; base: Base }) {
                       <img key={i} src={f.url} alt={`Foto ${f.momento}`} className="h-20 w-20 rounded-lg object-cover" />
                     ))}
                   </div>
+                )}
+                {base === "tecnico" && (v.estado === "programada" || v.estado === "en_curso") && (
+                  <Link href={r.tarea(v.id)} className="mt-3 flex min-h-12 items-center justify-center gap-2 rounded-xl bg-marca-800 font-semibold text-white active:bg-marca-950">
+                    {v.estado === "en_curso" ? <>Continuar tarea <ChevronRight size={18} /></> : <><MapPin size={18} /> Abrir y marcar entrada</>}
+                  </Link>
                 )}
               </li>
             );

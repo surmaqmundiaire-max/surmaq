@@ -4,6 +4,8 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { Building2, CalendarCheck, CalendarDays, ListTodo, ChevronDown } from "lucide-react";
 import { Recordatorios } from "@/components/recordatorios";
+import { useEffect } from "react";
+import { registrarNavegacion } from "@/lib/volver";
 import { useStore } from "@/lib/store";
 import { tecnicos } from "@/lib/selectors";
 import { cx } from "@/components/ui";
@@ -18,6 +20,7 @@ const NAV = [
 export default function TecnicoLayout({ children }: { children: React.ReactNode }) {
   const path = usePathname();
   const { tecnicoActualId, setTecnicoActual, pendientes, trabajos } = useStore();
+  useEffect(registrarNavegacion, [path]);
   const enVisita = path.startsWith("/tecnico/visita/") || path.endsWith("/nuevo");
   const misTrabajos = new Set(trabajos.filter((t) => t.asignadoId === tecnicoActualId).map((t) => t.id));
   const nPend = pendientes.filter((p) => !p.resueltoEn && misTrabajos.has(p.trabajoId)).length;

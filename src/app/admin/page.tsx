@@ -2,14 +2,15 @@
 
 import Link from "next/link";
 import { useState } from "react";
-import { ChevronRight } from "lucide-react";
+import { CheckCircle2, ChevronRight, ClipboardList, Clock, MapPinned, type LucideIcon } from "lucide-react";
+import { ChipTipo, Ficha, IconoTipo } from "@/components/visual";
 import { useStore } from "@/lib/store";
 import { alertas, avanceTrabajo, contexto, horasVisita, tecnicos } from "@/lib/selectors";
 import { duracion, fechaLarga, hora, horasEntre, toLocalIso } from "@/lib/format";
 import { TIPO_LABEL } from "@/lib/mock-data";
 import type { Perfil, TipoTrabajo } from "@/lib/types";
 import { Jornada, LeyendaJornada } from "@/components/jornada";
-import { Avatar, Badge, Barra, IconoNivel, cx } from "@/components/ui";
+import { Avatar, Barra, IconoNivel, cx } from "@/components/ui";
 
 export default function Panel() {
   const s = useStore();
@@ -31,10 +32,10 @@ export default function Panel() {
           <p className="text-sm text-tinta-2">{fechaLarga(dia)} · actualizado {hora(s.ahora)}</p>
         </div>
         <dl className="flex flex-wrap gap-x-8 gap-y-2">
-          <Cifra k="En campo ahora" v={`${enCampo.length} de ${tecs.length}`} />
-          <Cifra k="Horas hoy" v={duracion(horasHoy)} />
-          <Cifra k="Tareas hoy" v={`${finalizadasHoy} de ${visitasHoy.length} hechas`} />
-          <Cifra k="Mantenimientos abiertos" v={String(abiertos.length)} />
+          <Cifra icono={MapPinned} tono="info" k="En campo ahora" v={`${enCampo.length} de ${tecs.length}`} />
+          <Cifra icono={Clock} tono="marca" k="Horas hoy" v={duracion(horasHoy)} />
+          <Cifra icono={CheckCircle2} tono="ok" k="Tareas hoy" v={`${finalizadasHoy} de ${visitasHoy.length} hechas`} />
+          <Cifra icono={ClipboardList} tono="aviso" k="Mantenimientos abiertos" v={String(abiertos.length)} />
         </dl>
       </header>
 
@@ -193,7 +194,7 @@ function EstadoTrabajos() {
           <div className="flex flex-wrap gap-2 border-b border-borde px-4 py-3">
             {tipos.map((tp) => {
               const n = enCurso.filter((t) => t.tipo === tp).length;
-              return n ? <Badge key={tp}>{TIPO_LABEL[tp]} <span className="tabular">{n}</span></Badge> : null;
+              return n ? <span key={tp} className="inline-flex items-center gap-1"><ChipTipo tipo={tp} /><span className="text-xs font-semibold tabular">{n}</span></span> : null;
             })}
           </div>
           <ul className="divide-y divide-borde">
@@ -202,7 +203,8 @@ function EstadoTrabajos() {
               const av = avanceTrabajo(t, s.visitas);
               return (
                 <li key={t.id}>
-                  <Link href={`/admin/mantenimientos/${t.id}`} className="grid grid-cols-[1fr_100px] items-center gap-3 px-4 py-2.5 hover:bg-fondo">
+                  <Link href={`/admin/mantenimientos/${t.id}`} className="grid grid-cols-[auto_1fr_100px] items-center gap-3 px-4 py-2.5 hover:bg-fondo">
+                    <IconoTipo tipo={t.tipo} size={32} />
                     <span className="min-w-0">
                       <span className="block truncate text-sm font-semibold">Nº {t.numero} · {t.titulo}</span>
                       <span className="block truncate text-xs text-tinta-2">{cliente.razonSocial}</span>
@@ -221,11 +223,14 @@ function EstadoTrabajos() {
     );
   }
 
-function Cifra({ k, v }: { k: string; v: string }) {
+function Cifra({ k, v, icono, tono }: { k: string; v: string; icono: LucideIcon; tono: "marca" | "ok" | "aviso" | "info" }) {
   return (
-    <div>
-      <dt className="text-xs text-tinta-2">{k}</dt>
-      <dd className="text-lg font-semibold tabular">{v}</dd>
+    <div className="flex items-center gap-2.5">
+      <Ficha icono={icono} tono={tono} size={36} />
+      <div>
+        <dt className="text-xs text-tinta-2">{k}</dt>
+        <dd className="text-lg leading-tight font-semibold tabular">{v}</dd>
+      </div>
     </div>
   );
 }

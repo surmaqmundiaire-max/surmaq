@@ -2,12 +2,13 @@
 
 import Link from "next/link";
 import { Plus } from "lucide-react";
+import { ChipTipo } from "@/components/visual";
 import { useState } from "react";
 import { useStore } from "@/lib/store";
 import { avanceTrabajo, contexto, perfil, tecnicos } from "@/lib/selectors";
 import { fechaCorta } from "@/lib/format";
 import { TIPO_LABEL } from "@/lib/mock-data";
-import { Barra, Badge, EstadoTrabajoBadge, Vacio } from "@/components/ui";
+import { Barra, EstadoTrabajoBadge, Vacio } from "@/components/ui";
 import { Buscador, Selector, norm } from "@/components/filtros";
 
 export default function Trabajos() {
@@ -65,7 +66,7 @@ export default function Trabajos() {
                     <Link href={`/admin/mantenimientos/${t.id}`} className="block font-semibold hover:underline">{t.titulo}</Link>
                     <span className="text-tinta-2">{cliente.razonSocial} · {equipo.nombre}</span>
                   </td>
-                  <td className="px-4 py-3"><Badge>{TIPO_LABEL[t.tipo]}</Badge></td>
+                  <td className="px-4 py-3"><ChipTipo tipo={t.tipo} /></td>
                   <td className="px-4 py-3 whitespace-nowrap">{perfil(t.asignadoId).nombre}</td>
                   <td className="px-4 py-3 whitespace-nowrap tabular">{fechaCorta(t.fechaIngreso)}</td>
                   <td className="px-4 py-3">

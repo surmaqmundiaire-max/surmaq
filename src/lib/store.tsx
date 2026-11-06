@@ -43,6 +43,9 @@ function useAcciones(set: React.Dispatch<React.SetStateAction<Estado>>, ahora: (
       setTecnicoActual: (id: string) => set((s) => ({ ...s, tecnicoActualId: id })),
       iniciarVisita: (id: string, distanciaM: number) =>
         patchVisita(id, { estado: "en_curso", checkinEn: ahora(), checkinDistanciaM: distanciaM }),
+      /** Deshace una entrada marcada por error (vuelve a «programada»). */
+      deshacerEntrada: (id: string) =>
+        patchVisita(id, { estado: "programada", checkinEn: undefined, checkinDistanciaM: undefined }),
       finalizarVisita: (id: string) =>
         set((s) => {
           const v = s.visitas.find((x) => x.id === id)!;
@@ -86,8 +89,11 @@ function useAcciones(set: React.Dispatch<React.SetStateAction<Estado>>, ahora: (
         set((s) => ({ ...s, visitas: [...s.visitas, { ...v, id }] }));
         return id;
       },
-      agregarPendiente:(p: Omit<Pendiente, "id" | "creadoEn">) =>
-        set((s) => ({ ...s, pendientes: [...s.pendientes, { ...p, id: `p-${Date.now()}`, creadoEn: ahora() }] })),
+      agregarPendiente: (p: Omit<Pendiente, "id" | "creadoEn">) => {
+        const id = `p-${Date.now()}`;
+        set((s) => ({ ...s, pendientes: [...s.pendientes, { ...p, id, creadoEn: ahora() }] }));
+        return id;
+      },
       quitarPendiente: (id: string) => set((s) => ({ ...s, pendientes: s.pendientes.filter((p) => p.id !== id) })),
       resolverPendiente: (id: string) =>
         set((s) => ({ ...s, pendientes: s.pendientes.map((p) => (p.id === id ? { ...p, resueltoEn: p.resueltoEn ? undefined : ahora() } : p)) })),

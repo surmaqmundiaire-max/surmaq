@@ -4,13 +4,16 @@ import Link from "next/link";
 import { use, useMemo, useRef, useState } from "react";
 import {
   ArrowLeft, Camera, Car, Check, CheckCircle2, ChevronRight, History, Loader2, MapPin, Mic, MicOff,
-  Navigation, Phone, Plus, Sparkles, Timer, Trash2, Users, X,
+  ListChecks, Navigation, NotebookPen, Phone, Plus, Sparkles, Timer, Trash2, Users, X, type LucideIcon,
 } from "lucide-react";
+import { ChipTipo, IconoTipo } from "@/components/visual";
 import { useStore } from "@/lib/store";
 import { contexto, distanciaM, horasVisita, perfil, tecnicos, UMBRAL_DISTANCIA_M } from "@/lib/selectors";
 import { CHECKLISTS, TIPO_LABEL } from "@/lib/mock-data";
 import { duracion, fechaCorta, hora, metros } from "@/lib/format";
 import { cx } from "@/components/ui";
+import { useAviso } from "@/components/aviso";
+import { useVolver } from "@/lib/volver";
 import { Firma } from "@/components/firma";
 import type { LugarTrabajo } from "@/lib/types";
 
@@ -46,10 +49,8 @@ export default function VisitaPage({ params }: { params: Promise<{ id: string }>
       {/* Encabezado */}
       <header className="sticky top-0 z-10 bg-marca-900 px-2 pt-2 pb-3 text-white">
         <div className="flex items-center gap-1">
-          <Link href="/tecnico" aria-label="Volver a Hoy" className="flex h-11 w-11 items-center justify-center rounded-full hover:bg-white/10">
-            <ArrowLeft size={22} />
-          </Link>
-          <p className="text-sm text-marca-100 tabular">Mantenimiento Nº {trabajo.numero} · {TIPO_LABEL[trabajo.tipo]}</p>
+          <BotonAtras />
+          <p className="flex items-center gap-2 text-sm text-marca-100 tabular">Mant. Nº {trabajo.numero} <ChipTipo tipo={trabajo.tipo} className="bg-white/95" /></p>
         </div>
         <div className="px-2">
           <h1 className="text-xl leading-tight font-bold">{cliente.razonSocial}</h1>
@@ -84,6 +85,11 @@ type SetCerrando = (c: boolean) => void;
   // ---------------- 1. LLEGADA ----------------
 function Llegada({ id }: { id: string }) {
     const { s, v, equipo, cliente, pendientesTrabajo } = useVisita(id);
+    const aviso = useAviso();
+    const entrar = (d: number) => {
+      s.iniciarVisita(v.id, d);
+      aviso(`Entrada marcada · ${hora(s.ahora)}`, { texto: "Deshacer", onClick: () => s.deshacerEntrada(v.id) });
+    };
     // Solo una tarea abierta a la vez: así ninguna salida queda sin marcar.
     const otraAbierta = s.visitas.find((x) => x.tecnicoId === v.tecnicoId && x.estado === "en_curso" && x.id !== v.id);
     const otraCliente = otraAbierta ? contexto(s.trabajos, otraAbierta.trabajoId).cliente.razonSocial : "";
@@ -96,7 +102,7 @@ function Llegada({ id }: { id: string }) {
       const seguir = (d: number) => {
         setDist(d);
         if (d > UMBRAL_DISTANCIA_M) setEstadoGps("lejos");
-        else s.iniciarVisita(v!.id, d);
+        else entrar(d);
       };
       if (!("geolocation" in navigator)) return seguir(0);
       navigator.geolocation.getCurrentPosition(
@@ -194,7 +200,7 @@ function Llegada({ id }: { id: string }) {
               </p>
               <div className="grid grid-cols-2 gap-2">
                 <BotonSecundario onClick={() => setEstadoGps("idle")}>Cancelar</BotonSecundario>
-                <BotonPrincipal onClick={() => s.iniciarVisita(v!.id, dist)}>Iniciar igual</BotonPrincipal>
+                <BotonPrincipal onClick={() => entrar(dist)}>Marcar entrada igual</BotonPrincipal>
               </div>
             </div>
           ) : (
@@ -219,10 +225,10 @@ function Trabajo({ id, paso, setPaso, setCerrando }: { id: string; paso: Paso; s
     const hechos = items.filter(([, x]) => x).length;
     const nFotos = v!.fotos.length;
     const pendVisita = s.pendientes.filter((p) => p.visitaId === v!.id);
-    const tabs: { id: Paso; texto: string; cuenta: string }[] = [
-      { id: "checklist", texto: "Checklist", cuenta: `${hechos}/${items.length}` },
-      { id: "fotos", texto: "Fotos", cuenta: String(nFotos) },
-      { id: "notas", texto: "Notas", cuenta: pendVisita.length ? `${pendVisita.length} pend.` : "" },
+    const tabs: { id: Paso; texto: string; cuenta: string; icono: LucideIcon; listo: boolean }[] = [
+      { id: "checklist", texto: "Checklist", cuenta: `${hechos}/${items.length}`, icono: ListChecks, listo: hechos === items.length },
+      { id: "fotos", texto: "Fotos", cuenta: String(nFotos), icono: Camera, listo: nFotos > 0 },
+      { id: "notas", texto: "Notas", cuenta: pendVisita.length ? `${pendVisita.length} pend.` : "", icono: NotebookPen, listo: !!v.comentarios },
     ];
     return (
       <>
@@ -239,8 +245,12 @@ function Trabajo({ id, paso, setPaso, setCerrando }: { id: string; paso: Paso; s
                     paso === t.id ? "border-marca-800 text-marca-900" : "border-transparent text-tinta-3",
                   )}
                 >
-                  {t.texto}
-                  <span className="text-xs font-medium tabular">{t.cuenta || "—"}</span>
+                  <span className="flex items-center gap-1.5">
+                    <t.icono size={17} /> {t.texto}
+                  </span>
+                  <span className={cx("inline-flex items-center gap-0.5 text-xs font-medium tabular", t.listo && "text-ok")}>
+                    {t.listo && <Check size={12} strokeWidth={3} />} {t.cuenta || "—"}
+                  </span>
                 </button>
               </li>
             ))}
@@ -251,7 +261,7 @@ function Trabajo({ id, paso, setPaso, setCerrando }: { id: string; paso: Paso; s
           {paso === "checklist" && (
             <section>
               <div className="mb-2 flex items-center justify-between">
-                <h2 className="font-semibold">{TIPO_LABEL[trabajo.tipo]}</h2>
+                <h2 className="flex items-center gap-2 font-semibold"><IconoTipo tipo={trabajo.tipo} size={28} /> Checklist · {TIPO_LABEL[trabajo.tipo]}</h2>
                 <button type="button" className="min-h-11 text-sm font-semibold text-marca-700" onClick={() => s.setChecklistTodo(v!.id, hechos !== items.length)}>
                   {hechos === items.length ? "Desmarcar todo" : "Marcar todo"}
                 </button>
@@ -343,6 +353,11 @@ function Fotos({ id }: { id: string }) {
 
 function Notas({ id }: { id: string }) {
     const { s, v, trabajo } = useVisita(id);
+    const aviso = useAviso();
+    const nuevoPendiente = (descripcion: string, responsable: "cliente" | "surmaq") => {
+      const pid = s.agregarPendiente({ trabajoId: trabajo.id, visitaId: v.id, descripcion, responsable });
+      aviso(`Pendiente agregado: ${descripcion}`, { texto: "Deshacer", onClick: () => s.quitarPendiente(pid) });
+    };
     const [escuchando, setEscuchando] = useState(false);
     const [texto, setTexto] = useState(v!.comentarios ?? "");
     const [otro, setOtro] = useState("");
@@ -418,7 +433,7 @@ function Notas({ id }: { id: string }) {
               <button
                 key={p.texto}
                 type="button"
-                onClick={() => s.agregarPendiente({ trabajoId: trabajo.id, visitaId: v!.id, descripcion: p.texto, responsable: p.responsable })}
+                onClick={() => nuevoPendiente(p.texto, p.responsable)}
                 className="inline-flex min-h-11 items-center gap-1 rounded-full border border-borde bg-superficie px-3.5 text-sm font-medium hover:bg-fondo active:bg-marca-50"
               >
                 <Plus size={15} /> {p.texto}
@@ -430,7 +445,7 @@ function Notas({ id }: { id: string }) {
             onSubmit={(e) => {
               e.preventDefault();
               if (!otro.trim()) return;
-              s.agregarPendiente({ trabajoId: trabajo.id, visitaId: v!.id, descripcion: otro.trim(), responsable: resp });
+              nuevoPendiente(otro.trim(), resp);
               setOtro("");
             }}
           >
@@ -469,6 +484,7 @@ function Notas({ id }: { id: string }) {
   // ---------------- 3. CIERRE ----------------
 function Cierre({ id, setPaso, setCerrando }: { id: string; setPaso: SetPaso; setCerrando: SetCerrando }) {
     const { s, v, trabajo, equipo, cliente } = useVisita(id);
+    const aviso = useAviso();
     const [terminado, setTerminado] = useState<"si" | "no" | null>(null);
     const [estadoEquipo, setEstadoEquipo] = useState("");
     const [proxima, setProxima] = useState<string>("");
@@ -512,6 +528,7 @@ function Cierre({ id, setPaso, setCerrando }: { id: string; setPaso: SetPaso; se
     const confirmar = () => {
       s.actualizarVisita(v!.id, { firmadoPor: firmante });
       s.finalizarVisita(v!.id);
+      aviso(`Salida marcada · ${hora(s.ahora)}`);
       if (terminado === "si") s.cerrarTrabajo(trabajo.id, estadoEquipo);
       else
         s.agregarVisita({
@@ -673,6 +690,7 @@ function Resumen({ id }: { id: string }) {
 // ---------------- SALIDA OLVIDADA ----------------
 function SalidaOlvidada({ id }: { id: string }) {
     const { s, v } = useVisita(id);
+    const aviso = useAviso();
     const dia = v.checkinEn!.slice(0, 10);
     const sugerida = v.programadaFin.startsWith(dia) && v.programadaFin > v.checkinEn! ? v.programadaFin.slice(11, 16) : "17:00";
     const [horaSalida, setHoraSalida] = useState(sugerida);
@@ -700,7 +718,7 @@ function SalidaOlvidada({ id }: { id: string }) {
           </label>
         </div>
         <BarraAccion>
-          <BotonPrincipal disabled={!valida} onClick={() => s.registrarSalidaOlvidada(v.id, `${dia}T${horaSalida}:00`)}>
+          <BotonPrincipal disabled={!valida} onClick={() => { s.registrarSalidaOlvidada(v.id, `${dia}T${horaSalida}:00`); aviso(`Salida del ${fechaCorta(dia)} registrada a las ${horaSalida}`); }}>
             <CheckCircle2 size={20} /> Registrar salida a las {horaSalida}
           </BotonPrincipal>
         </BarraAccion>
@@ -709,6 +727,14 @@ function SalidaOlvidada({ id }: { id: string }) {
 }
 
 // ---------- piezas ----------
+function BotonAtras() {
+  const volver = useVolver("/tecnico");
+  return (
+    <button type="button" onClick={volver} aria-label="Volver" className="flex h-12 w-12 items-center justify-center rounded-full hover:bg-white/10 active:bg-white/15">
+      <ArrowLeft size={22} />
+    </button>
+  );
+}
 interface SpeechRec {
   lang: string;
   interimResults: boolean;
