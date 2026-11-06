@@ -85,7 +85,7 @@ function useDias() {
 }
 
 /** Propone el siguiente horario libre: la próxima hora en punto de hoy, o mañana a las 09:00 si ya es tarde. */
-function useInicioSugerido(): [string, string] {
+export function useInicioSugerido(): [string, string] {
   const { ahora } = useStore();
   const dias = useDias();
   const h = Number(ahora.slice(11, 13)) + 1;
@@ -97,7 +97,7 @@ const HORAS: [string, string][] = ["08:00", "09:00", "10:00", "11:00", "14:00", 
 const DURACIONES: [string, string][] = [["1", "1 h"], ["2", "2 h"], ["3", "3 h"], ["4", "4 h"], ["8", "Día completo"]];
 
 /** Fecha, hora y duración de una tarea, con opciones rápidas y campo libre. */
-function Programacion({ fecha, setFecha, horaIni, setHoraIni, dur, setDur }: { fecha: string; setFecha: (v: string) => void; horaIni: string; setHoraIni: (v: string) => void; dur: string; setDur: (v: string) => void }) {
+export function Programacion({ fecha, setFecha, horaIni, setHoraIni, dur, setDur }: { fecha: string; setFecha: (v: string) => void; horaIni: string; setHoraIni: (v: string) => void; dur: string; setDur: (v: string) => void }) {
   const dias = useDias();
   return (
     <div className="space-y-4">
@@ -132,9 +132,9 @@ export function useProgramador(base: "admin" | "tecnico") {
 }
 
 /** Elegir técnico con un toque. El técnico solo puede programarse a sí mismo. */
-function SelectorTecnico({ base, valor, onChange }: { base: "admin" | "tecnico"; valor: string; onChange: (id: string) => void }) {
+export function SelectorTecnico({ base, valor, onChange, ciudad }: { base: "admin" | "tecnico"; valor: string; onChange: (id: string) => void; ciudad?: string }) {
   const yo = useProgramador(base);
-  const opciones = tecnicosProgramables(yo);
+  const opciones = tecnicosProgramables(yo).filter((t) => !ciudad || t.ciudad === ciudad);
   if (base === "tecnico") {
     return (
       <div>

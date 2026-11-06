@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { useState } from "react";
-import { CalendarPlus, UserCheck, Camera, Car, Check, ChevronRight, Clock3, MapPin, PenLine, Users } from "lucide-react";
+import { CalendarPlus, Handshake, UserCheck, Camera, Car, Check, ChevronRight, Clock3, MapPin, PenLine, Users } from "lucide-react";
 import { useStore } from "@/lib/store";
 import { avanceTrabajo, contexto, horasVisita, perfil, ROL_LABEL, UMBRAL_DISTANCIA_M } from "@/lib/selectors";
 import { duracion, fechaCorta, fechaLarga, hora, metros } from "@/lib/format";
@@ -47,6 +47,16 @@ export function DetalleMantenimiento({ id, base }: { id: string; base: Base }) {
         </div>
         <EstadoTrabajoBadge estado={t.estado} />
       </header>
+
+      {t.solicitudId && (() => {
+        const sol = s.solicitudes.find((x) => x.id === t.solicitudId);
+        return sol ? (
+          <p className="flex flex-wrap items-center gap-2 rounded-xl bg-t-arr-bg px-4 py-2.5 text-sm text-t-arr-tx">
+            <Handshake size={16} /> Pedido por <strong>{perfil(sol.vendedorId).nombre}</strong> (vendedor) · Solicitud Nº {sol.numero}
+            {base === "admin" && <> · USD {((sol.montoProducto ?? 0) + (sol.montoManoObra ?? 0)).toLocaleString("es-EC")} · <Link href={`/admin/solicitudes/${sol.id}`} className="font-semibold underline underline-offset-2">ver solicitud</Link></>}
+          </p>
+        ) : null;
+      })()}
 
       <section className="grid grid-cols-2 gap-4 rounded-2xl border border-borde bg-superficie p-4 text-sm sm:grid-cols-3 lg:grid-cols-5">
         <Dato k="Técnico" v={perfil(t.asignadoId).nombre} />

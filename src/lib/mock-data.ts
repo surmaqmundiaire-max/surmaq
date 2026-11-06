@@ -1,6 +1,6 @@
 // Datos de ejemplo para la maqueta. Los clientes son ficticios.
 // Fecha de demostración fija para que la maqueta sea reproducible.
-import type { Cliente, Equipo, Pendiente, Perfil, Permiso, Trabajo, TipoTrabajo, Visita } from "./types";
+import type { Cliente, Equipo, Pendiente, Perfil, Permiso, Solicitud, Trabajo, TipoTrabajo, Visita } from "./types";
 
 export const HOY = "2026-11-06";
 export const AHORA_DEMO = "2026-11-06T15:10:00";
@@ -51,6 +51,8 @@ export const perfiles: Perfil[] = [
   // Nombres de ejemplo: se reemplazan por el personal real al cargar los usuarios
   { id: "u-jefe", nombre: "Roberto Salazar", email: "rsalazar@surmaq.com", rol: "jefe", ciudad: "Guayaquil", area: "Mantenimiento", telefono: "0990000010" },
   { id: "u-coord-gye", nombre: "Daniela Ortiz", email: "dortiz@surmaq.com", rol: "coordinador", ciudad: "Guayaquil", area: "Mantenimiento", telefono: "0990000011", ciudadesACargo: ["Guayaquil"] },
+  { id: "u-vend-gye", nombre: "Andrea Molina", email: "amolina@surmaq.com", rol: "vendedor", ciudad: "Guayaquil", area: "Ventas", telefono: "0990000020" },
+  { id: "u-vend-uio", nombre: "Luis Paredes", email: "lparedes@surmaq.com", rol: "vendedor", ciudad: "Quito", area: "Ventas", telefono: "0990000021" },
   { id: "u-coord-uio", nombre: "Mateo Villacís", email: "mvillacis@surmaq.com", rol: "coordinador", ciudad: "Quito", area: "Mantenimiento", telefono: "0990000012", ciudadesACargo: ["Quito"] },
   { id: "u-jalvear", nombre: "Jorge Alvear", email: "jalvear@surmaq.com", rol: "tecnico", ciudad: "Guayaquil", area: "Mantenimiento", telefono: "0990000001" },
   { id: "u-jmerchan", nombre: "Jairo Merchán", email: "jmerchan@surmaq.com", rol: "tecnico", ciudad: "Guayaquil", area: "Mantenimiento", telefono: "0990000002" },
@@ -176,4 +178,16 @@ export const pendientes: Pendiente[] = [
 export const permisos: Permiso[] = [
   { id: "pe1", perfilId: "u-aharo", razon: "permiso_medico", desde: t("2026-11-10", "08:00"), hasta: t("2026-11-10", "17:00"), detalle: "Cita médica control" },
   { id: "pe2", perfilId: "u-jmerchan", razon: "vacaciones", desde: t("2026-12-22", "08:00"), hasta: t("2026-12-31", "17:00"), detalle: "Vacaciones de fin de año", aprobado: true },
+];
+
+/** Vehículos de la empresa (placas de ejemplo). */
+export const VEHICULOS = ["Camioneta GYE · GSB-1234", "Furgoneta GYE · GSC-5678", "Camioneta UIO · PCD-9012", "Vehículo particular"];
+
+/** Empresas que facturan (pendiente de confirmar los nombres reales). */
+export const EMPRESAS_FACTURA = ["Surmaq", "Otra empresa del grupo"];
+
+export const solicitudes: Solicitud[] = [
+  { id: "s1", numero: 101, vendedorId: "u-vend-gye", clienteId: "c2", contacto: "Ing. María Vera", equipoId: "e3", tipo: "revision", descripcion: "Cliente reporta caída de presión en horas pico", dpto: "Guayaquil", solicitadaEn: t("2026-11-06", "10:20"), fechaRequerida: "2026-11-10", horaRequerida: "09:00", montoProducto: 0, montoManoObra: 180, empresaFactura: "Surmaq", notificarA: ["mvera@plasticospacifico.test"], estado: "ingresada" },
+  { id: "s2", numero: 102, vendedorId: "u-vend-uio", clienteId: "c7", contacto: "Dra. Jhoanna Ríos", equipoId: "e9", tipo: "mantenimiento", descripcion: "Mantenimiento preventivo anual del secador", dpto: "Quito", solicitadaEn: t("2026-11-05", "16:45"), fechaRequerida: "2026-11-11", horaRequerida: "10:00", montoProducto: 320, montoManoObra: 150, empresaFactura: "Surmaq", notificarA: [], estado: "ingresada" },
+  { id: "s3", numero: 100, vendedorId: "u-vend-gye", clienteId: "c1", contacto: "Julio Alay", equipoId: "e1", tipo: "instalacion", descripcion: "Instalación de secador OMI vendido", dpto: "Guayaquil", solicitadaEn: t("2026-11-03", "11:00"), fechaRequerida: "2026-11-06", horaRequerida: "11:00", montoProducto: 2400, montoManoObra: 250, empresaFactura: "Surmaq", notificarA: [], estado: "programada", revisadaPor: "u-coord-gye", revisadaEn: t("2026-11-03", "15:00"), trabajoId: "t2781", cambioHora: true },
 ];

@@ -15,6 +15,7 @@ const DESCRIPCION: Record<Rol, string> = {
   jefe: "Programa tareas a todos los técnicos, gestiona usuarios y aprueba permisos.",
   coordinador: "Programa tareas a los técnicos de sus ciudades.",
   tecnico: "Usa la app del celular y marca sus tareas.",
+  vendedor: "Solicita visitas técnicas para sus clientes y ve su estado.",
 };
 
 /** Crear o editar un usuario con su perfil y rol. */

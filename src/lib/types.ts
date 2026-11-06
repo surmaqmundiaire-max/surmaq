@@ -1,7 +1,7 @@
 // Tipos alineados con supabase/migrations/0001_modelo_inicial.sql
 // para que luego la maqueta se conecte a Supabase sin cambiar las pantallas.
 
-export type Rol = "admin" | "jefe" | "coordinador" | "tecnico";
+export type Rol = "admin" | "jefe" | "coordinador" | "tecnico" | "vendedor";
 export type TipoTrabajo = "mantenimiento" | "revision" | "instalacion" | "arranque" | "ensamblaje";
 export type LugarTrabajo = "en_cliente" | "en_oficina";
 export type EstadoTrabajo = "abierto" | "en_progreso" | "cerrado" | "cancelado";
@@ -65,6 +65,10 @@ export interface Trabajo {
   fechaIngreso: string;
   fechaCierre?: string;
   estadoGeneralEquipo?: string;
+  solicitudId?: string;
+  vendedorId?: string;
+  montoProducto?: number;
+  montoManoObra?: number;
 }
 
 export interface Visita {
@@ -89,6 +93,8 @@ export interface Visita {
   firmadoPor?: string;
   salidaCorregida?: boolean;
   programadaPor?: string; // id del usuario que la programó
+  vehiculo?: string;
+  salidaOficina?: string; // hora programada de salida de la oficina
   vistaPorTecnico?: boolean; // el técnico ya abrió la tarea asignada // la salida se registró después, con hora indicada por el técnico
 }
 
@@ -121,4 +127,34 @@ export interface DatosPlaca {
   presionMax?: string;
   caudal?: string;
   otros?: { etiqueta: string; valor: string }[];
+}
+
+export type EstadoSolicitud = "ingresada" | "programada" | "rechazada";
+
+/** Solicitud de visita técnica creada por un vendedor (ex formulario Cognito). */
+export interface Solicitud {
+  id: string;
+  numero: number;
+  vendedorId: string;
+  clienteId: string;
+  contacto: string;
+  equipoId: string;
+  tipo: TipoTrabajo;
+  descripcion: string;
+  dpto: "Guayaquil" | "Quito";
+  solicitadaEn: string;
+  fechaRequerida: string; // YYYY-MM-DD
+  horaRequerida: string; // HH:MM
+  duracionH?: number;
+  montoProducto?: number;
+  montoManoObra?: number;
+  empresaFactura?: string;
+  notificarA: string[];
+  estado: EstadoSolicitud;
+  // al revisarla
+  revisadaPor?: string;
+  revisadaEn?: string;
+  motivoRechazo?: string;
+  trabajoId?: string;
+  cambioHora?: boolean; // se programó en otra fecha u hora que la requerida
 }

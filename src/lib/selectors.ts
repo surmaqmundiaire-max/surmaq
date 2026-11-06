@@ -19,14 +19,16 @@ export const ROL_LABEL: Record<Rol, string> = {
   jefe: "Jefe de mantenimiento",
   coordinador: "Coordinador de mantenimiento",
   tecnico: "Técnico",
+  vendedor: "Vendedor",
 };
 
-export type Permiso = "programar_tareas" | "gestionar_usuarios" | "ver_panel" | "aprobar_permisos";
+export type Permiso = "programar_tareas" | "gestionar_usuarios" | "ver_panel" | "aprobar_permisos" | "solicitar_visitas" | "aprobar_solicitudes";
 const PERMISOS: Record<Rol, Permiso[]> = {
-  admin: ["programar_tareas", "gestionar_usuarios", "ver_panel", "aprobar_permisos"],
-  jefe: ["programar_tareas", "gestionar_usuarios", "ver_panel", "aprobar_permisos"],
-  coordinador: ["programar_tareas", "ver_panel"],
+  admin: ["programar_tareas", "gestionar_usuarios", "ver_panel", "aprobar_permisos", "solicitar_visitas", "aprobar_solicitudes"],
+  jefe: ["programar_tareas", "gestionar_usuarios", "ver_panel", "aprobar_permisos", "solicitar_visitas", "aprobar_solicitudes"],
+  coordinador: ["programar_tareas", "ver_panel", "solicitar_visitas", "aprobar_solicitudes"],
   tecnico: [],
+  vendedor: ["solicitar_visitas"],
 };
 export const puede = (rol: Rol, p: Permiso) => PERMISOS[rol].includes(p);
 

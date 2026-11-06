@@ -4,7 +4,7 @@
 // estas acciones se reemplazan por llamadas a la base de datos.
 import { createContext, useCallback, useContext, useEffect, useMemo, useState } from "react";
 import * as mock from "./mock-data";
-import type { Cliente, Equipo, Pendiente, Perfil, Trabajo, Visita } from "./types";
+import type { Cliente, Equipo, Pendiente, Perfil, Solicitud, TipoTrabajo, Trabajo, Visita } from "./types";
 import { registro } from "./selectors";
 import { toLocalIso } from "./format";
 
@@ -15,6 +15,7 @@ interface Estado {
   equipos: Equipo[];
   clientes: Cliente[];
   perfiles: Perfil[];
+  solicitudes: Solicitud[];
   tecnicoActualId: string;
   /** Usuario con sesión iniciada en el panel (administrador, jefe o coordinador) */
   usuarioActualId: string;
@@ -27,11 +28,12 @@ const inicial = (): Estado => ({
   equipos: mock.equipos,
   clientes: mock.clientes,
   perfiles: mock.perfiles,
+  solicitudes: mock.solicitudes,
   tecnicoActualId: "u-hchicazawa",
   usuarioActualId: "u-admin",
 });
 
-const KEY = "optimum-maqueta-v4";
+const KEY = "optimum-maqueta-v5";
 
 function useAcciones(set: React.Dispatch<React.SetStateAction<Estado>>, ahora: () => string) {
   const patchVisita = useCallback(
@@ -54,6 +56,75 @@ function useAcciones(set: React.Dispatch<React.SetStateAction<Estado>>, ahora: (
       },
       actualizarPerfil: (id: string, cambios: Partial<Perfil>) =>
         set((s) => ({ ...s, perfiles: s.perfiles.map((p) => (p.id === id ? { ...p, ...cambios } : p)) })),
+      crearSolicitud: (sol: Omit<Solicitud, "id" | "numero" | "solicitadaEn" | "estado">) => {
+        const id = `s-${Date.now()}`;
+        set((s) => ({
+          ...s,
+          solicitudes: [...s.solicitudes, { ...sol, id, numero: Math.max(99, ...s.solicitudes.map((x) => x.numero)) + 1, solicitadaEn: ahora(), estado: "ingresada" }],
+        }));
+        return id;
+      },
+      actualizarSolicitud: (id: string, cambios: Partial<Solicitud>) =>
+        set((s) => ({ ...s, solicitudes: s.solicitudes.map((x) => (x.id === id ? { ...x, ...cambios } : x)) })),
+      eliminarSolicitud: (id: string) => set((s) => ({ ...s, solicitudes: s.solicitudes.filter((x) => x.id !== id) })),
+      rechazarSolicitud: (id: string, motivo: string, por: string) =>
+        set((s) => ({ ...s, solicitudes: s.solicitudes.map((x) => (x.id === id ? { ...x, estado: "rechazada", motivoRechazo: motivo, revisadaPor: por, revisadaEn: ahora() } : x)) })),
+      /** Aprueba una solicitud: crea el mantenimiento y la tarea para el técnico. */
+      aprobarSolicitud: (
+        id: string,
+        p: { por: string; tecnicoId: string; acompanantes: string[]; vehiculo: string; fecha: string; horaSalida: string; horaLlegada: string; horas: number; tipo: TipoTrabajo; descripcion: string },
+      ) => {
+        const trabajoId = `t-${Date.now()}`;
+        set((s) => {
+          const sol = s.solicitudes.find((x) => x.id === id)!;
+          const ini = `${p.fecha}T${p.horaLlegada}:00`;
+          const fin = new Date(ini);
+          fin.setMinutes(fin.getMinutes() + p.horas * 60);
+          const trabajo: Trabajo = {
+            id: trabajoId,
+            numero: Math.max(0, ...s.trabajos.map((x) => x.numero)) + 1,
+            equipoId: sol.equipoId,
+            titulo: p.descripcion,
+            tipo: p.tipo,
+            lugar: "en_cliente",
+            estado: "abierto",
+            asignadoId: p.tecnicoId,
+            fechaIngreso: ahora(),
+            solicitudId: id,
+            vendedorId: sol.vendedorId,
+            montoProducto: sol.montoProducto,
+            montoManoObra: sol.montoManoObra,
+          };
+          const visita: Visita = {
+            id: `v-${Date.now()}`,
+            trabajoId,
+            tecnicoId: p.tecnicoId,
+            descripcion: p.descripcion,
+            lugar: "en_cliente",
+            programadaInicio: ini,
+            programadaFin: toLocalIso(fin),
+            salidaOficina: p.horaSalida,
+            vehiculo: p.vehiculo,
+            estado: "programada",
+            autoEmpresa: p.vehiculo !== "Vehículo particular",
+            acompanantes: p.acompanantes,
+            checklist: Object.fromEntries(mock.CHECKLISTS[p.tipo].map((k) => [k, false])),
+            fotos: [],
+            programadaPor: p.por,
+          };
+          return {
+            ...s,
+            trabajos: [...s.trabajos, trabajo],
+            visitas: [...s.visitas, visita],
+            solicitudes: s.solicitudes.map((x) =>
+              x.id === id
+                ? { ...x, estado: "programada", tipo: p.tipo, descripcion: p.descripcion, revisadaPor: p.por, revisadaEn: ahora(), trabajoId, cambioHora: p.fecha !== x.fechaRequerida || p.horaLlegada !== x.horaRequerida }
+                : x,
+            ),
+          };
+        });
+        return trabajoId;
+      },
       marcarVista: (id: string) => patchVisita(id, { vistaPorTecnico: true }),
       iniciarVisita: (id: string, distanciaM: number) =>
         patchVisita(id, { estado: "en_curso", checkinEn: ahora(), checkinDistanciaM: distanciaM }),

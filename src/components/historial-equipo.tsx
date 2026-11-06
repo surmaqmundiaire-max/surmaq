@@ -4,7 +4,7 @@ import Link from "next/link";
 import { CalendarClock, Camera, Plus, QrCode } from "lucide-react";
 import { ChipTipo, IconoTipo, MiniaturaEquipo } from "./visual";
 import { useStore } from "@/lib/store";
-import { cliente as getCliente, equipo as getEquipo, perfil } from "@/lib/selectors";
+import { cliente as getCliente, equipo as getEquipo, perfil, puede } from "@/lib/selectors";
 import { diasEntre, fechaCorta, fechaLarga } from "@/lib/format";
 import { EstadoTrabajoBadge, Vacio, cx } from "./ui";
 import { LectorPlaca, SlotFoto, aplicarLectura } from "./fotos-equipo";
@@ -12,7 +12,7 @@ import { Migas, rutas } from "./migas";
 
 /** Ficha del equipo con su historial: compartida entre técnico y administración. */
 export function FichaEquipo({ id, base }: { id: string; base: "tecnico" | "admin" }) {
-  const { trabajos, visitas, ahora, actualizarEquipo } = useStore();
+  const { trabajos, visitas, ahora, actualizarEquipo, usuarioActualId } = useStore();
   const e = getEquipo(id);
   const c = getCliente(e.clienteId);
   const hoy = ahora.slice(0, 10);
@@ -77,9 +77,15 @@ export function FichaEquipo({ id, base }: { id: string; base: "tecnico" | "admin
       <section>
         <div className="mb-2 flex items-center justify-between gap-2 px-1">
           <h2 className="text-lg font-semibold">Mantenimientos <span className="font-normal text-tinta-3 tabular">({historial.length})</span></h2>
-          <Link href={r.nuevoMantenimiento(id)} className="inline-flex min-h-11 items-center gap-1.5 rounded-xl bg-marca-800 px-4 text-sm font-semibold text-white hover:bg-marca-900">
-            <Plus size={17} /> Nuevo<span className="hidden sm:inline"> mantenimiento</span>
-          </Link>
+          {base === "admin" && !puede(perfil(usuarioActualId).rol, "programar_tareas") ? (
+            <Link href={`/admin/solicitudes/nueva?equipo=${id}`} className="inline-flex min-h-11 items-center gap-1.5 rounded-xl bg-marca-800 px-4 text-sm font-semibold text-white hover:bg-marca-900">
+              <Plus size={17} /> Solicitar visita
+            </Link>
+          ) : (
+            <Link href={r.nuevoMantenimiento(id)} className="inline-flex min-h-11 items-center gap-1.5 rounded-xl bg-marca-800 px-4 text-sm font-semibold text-white hover:bg-marca-900">
+              <Plus size={17} /> Nuevo<span className="hidden sm:inline"> mantenimiento</span>
+            </Link>
+          )}
         </div>
         {historial.length === 0 ? (
           <Vacio>Este equipo aún no tiene mantenimientos registrados.</Vacio>

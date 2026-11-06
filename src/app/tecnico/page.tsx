@@ -15,7 +15,8 @@ export default function Hoy() {
   const { visitas, trabajos, tecnicoActualId, ahora } = useStore();
   const yo = perfil(tecnicoActualId);
   const dia = ahora.slice(0, 10);
-  const mias = visitas.filter((v) => v.tecnicoId === tecnicoActualId);
+  // Incluye las tareas donde va como acompañante
+  const mias = visitas.filter((v) => v.tecnicoId === tecnicoActualId || v.acompanantes.includes(tecnicoActualId));
   const deHoy = mias
     .filter((v) => v.programadaInicio.startsWith(dia) || (v.estado === "en_curso"))
     .sort((a, b) => a.programadaInicio.localeCompare(b.programadaInicio));

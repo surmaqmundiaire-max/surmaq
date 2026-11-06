@@ -2,20 +2,23 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { Building2, CalendarDays, CalendarPlus, ChevronDown, Gauge, ListTodo, Lock, RotateCcw, UserCog, Users, Wrench } from "lucide-react";
+import { Building2, CalendarDays, CalendarPlus, ChevronDown, Gauge, Inbox, ListTodo, Lock, RotateCcw, UserCog, Users, Wrench } from "lucide-react";
+import { useEffect } from "react";
+import { useRouter } from "next/navigation";
 import { useStore } from "@/lib/store";
 import { alertas, perfil, puede, ROL_LABEL, type Permiso } from "@/lib/selectors";
 import { Avatar, cx } from "@/components/ui";
 import { BuscadorGlobal } from "@/components/buscador-global";
 
 const NAV: { href: string; label: string; icono: typeof Gauge; permiso?: Permiso }[] = [
-  { href: "/admin", label: "Panel", icono: Gauge },
+  { href: "/admin", label: "Panel", icono: Gauge, permiso: "ver_panel" },
+  { href: "/admin/solicitudes", label: "Solicitudes", icono: Inbox, permiso: "solicitar_visitas" },
   { href: "/admin/programar", label: "Programar tareas", icono: CalendarPlus, permiso: "programar_tareas" },
-  { href: "/admin/calendario", label: "Calendario", icono: CalendarDays },
-  { href: "/admin/mantenimientos", label: "Mantenimientos", icono: Wrench },
-  { href: "/admin/pendientes", label: "Pendientes", icono: ListTodo },
+  { href: "/admin/calendario", label: "Calendario", icono: CalendarDays, permiso: "ver_panel" },
+  { href: "/admin/mantenimientos", label: "Mantenimientos", icono: Wrench, permiso: "ver_panel" },
+  { href: "/admin/pendientes", label: "Pendientes", icono: ListTodo, permiso: "ver_panel" },
   { href: "/admin/clientes", label: "Clientes", icono: Building2 },
-  { href: "/admin/tecnicos", label: "Técnicos", icono: Users },
+  { href: "/admin/tecnicos", label: "Técnicos", icono: Users, permiso: "ver_panel" },
   { href: "/admin/usuarios", label: "Usuarios", icono: UserCog, permiso: "gestionar_usuarios" },
 ];
 
@@ -23,6 +26,11 @@ const NAV: { href: string; label: string; icono: typeof Gauge; permiso?: Permiso
 const PROTEGIDAS: [string, Permiso][] = [
   ["/admin/usuarios", "gestionar_usuarios"],
   ["/admin/programar", "programar_tareas"],
+  ["/admin/solicitudes", "solicitar_visitas"],
+  ["/admin/calendario", "ver_panel"],
+  ["/admin/mantenimientos", "ver_panel"],
+  ["/admin/pendientes", "ver_panel"],
+  ["/admin/tecnicos", "ver_panel"],
 ];
 
 export default function AdminLayout({ children }: { children: React.ReactNode }) {
@@ -32,7 +40,14 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
   const nAlertas = alertas(s.visitas, s.pendientes, s.trabajos, s.ahora).length;
   const yo = perfil(s.usuarioActualId);
   const usuariosPanel = s.perfiles.filter((p) => p.rol !== "tecnico" && p.activo !== false);
+  const verSolicitudesPendientes = puede(yo.rol, "aprobar_solicitudes");
   const bloqueo = PROTEGIDAS.find(([ruta, permiso]) => path.startsWith(ruta) && !puede(yo.rol, permiso));
+  const nSolicitudes = s.solicitudes.filter((x) => x.estado === "ingresada" && (!yo.ciudadesACargo?.length || yo.ciudadesACargo.includes(x.dpto))).length;
+  const router = useRouter();
+  // El vendedor no tiene panel: entra directo a sus solicitudes
+  useEffect(() => {
+    if (path === "/admin" && !puede(yo.rol, "ver_panel")) router.replace("/admin/solicitudes");
+  }, [path, yo.rol, router]);
 
   return (
     <div className="min-h-dvh lg:grid lg:grid-cols-[240px_1fr]">
@@ -40,14 +55,14 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
         <div className="flex items-center justify-between gap-2 px-4 py-3 lg:block lg:px-5 lg:py-5">
           <Link href="/" className="block">
             <span className="block text-lg leading-tight font-bold">Optimum Service AI</span>
-            <span className="block text-xs text-marca-100/80">Surmaq · Administración</span>
+            <span className="block text-xs text-marca-100/80">Surmaq · {ROL_LABEL[yo.rol]}</span>
           </Link>
         </div>
         <nav aria-label="Secciones" className="overflow-x-auto lg:overflow-visible">
           <ul className="flex gap-1 px-2 pb-2 lg:flex-col lg:px-3">
             {NAV.filter((n) => !n.permiso || puede(yo.rol, n.permiso)).map(({ href, label, icono: I }) => {
               const activo = href === "/admin" ? path === href : path.startsWith(href) || (href === "/admin/clientes" && path.startsWith("/admin/equipos"));
-              const cuenta = href === "/admin" ? nAlertas : href === "/admin/pendientes" ? nPend : 0;
+              const cuenta = href === "/admin" ? nAlertas : href === "/admin/pendientes" ? nPend : href === "/admin/solicitudes" && verSolicitudesPendientes ? nSolicitudes : 0;
               return (
                 <li key={href} className="shrink-0">
                   <Link

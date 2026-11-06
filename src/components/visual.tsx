@@ -1,6 +1,6 @@
 // Sistema visual de reconocimiento rápido: color + ícono por tipo de trabajo y por línea de equipo.
 import {
-  Box, Building2, ClipboardList, Cog, Crown, HardHat, ShieldCheck, Cpu, Cylinder, Fan, Gauge, PackagePlus, Paintbrush, Power, ScanSearch, Snowflake, SprayCan, Waypoints, Wrench,
+  Box, Building2, ClipboardList, Cog, Crown, Handshake, HardHat, ShieldCheck, Cpu, Cylinder, Fan, Gauge, PackagePlus, Paintbrush, Power, ScanSearch, Snowflake, SprayCan, Waypoints, Wrench,
   type LucideIcon,
 } from "lucide-react";
 import type { Rol, TipoTrabajo } from "@/lib/types";
@@ -91,6 +91,7 @@ export const ROL_VISUAL: Record<Rol, { icono: LucideIcon; chip: string }> = {
   jefe: { icono: Crown, chip: "bg-t-ins-bg text-t-ins-tx" },
   coordinador: { icono: ClipboardList, chip: "bg-t-rev-bg text-t-rev-tx" },
   tecnico: { icono: HardHat, chip: "bg-t-ens-bg text-t-ens-tx" },
+  vendedor: { icono: Handshake, chip: "bg-t-arr-bg text-t-arr-tx" },
 };
 
 /** Etiqueta del rol del usuario con su ícono. */

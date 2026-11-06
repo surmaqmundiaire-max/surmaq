@@ -7,8 +7,8 @@ import type { Rol } from "@/lib/types";
 import { Avatar, Badge, cx } from "@/components/ui";
 import { ChipRol, ROL_VISUAL } from "@/components/visual";
 
-const ORDEN: Rol[] = ["admin", "jefe", "coordinador", "tecnico"];
-const PLURAL: Record<Rol, string> = { admin: "Administradores", jefe: "Jefes de mantenimiento", coordinador: "Coordinadores de mantenimiento", tecnico: "Técnicos" };
+const ORDEN: Rol[] = ["admin", "jefe", "coordinador", "vendedor", "tecnico"];
+const PLURAL: Record<Rol, string> = { admin: "Administradores", jefe: "Jefes de mantenimiento", coordinador: "Coordinadores de mantenimiento", tecnico: "Técnicos", vendedor: "Vendedores" };
 
 export default function Usuarios() {
   const { perfiles, visitas, ahora } = useStore();
