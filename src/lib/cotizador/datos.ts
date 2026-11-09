@@ -1,6 +1,6 @@
 // Datos base del cotizador de servicio técnico Maquinmotors (catálogo, tarifas, factores y ciudades).
 // Copiados del cotizador original; la empresa puede ajustarlos desde «Parámetros del cotizador».
-import type { Altura, Costos, Cuadrilla, CiudadCot, Entorno, Escala, Factor, Familia, Horario, ItemCatalogo, Parametros } from "./tipos";
+import type { Altura, Costos, Cuadrilla, CiudadCot, Entorno, Escala, Factor, Familia, GrupoPotencia, Horario, ItemCatalogo, Parametros } from "./tipos";
 
 type Fila = (string | number)[];
 
@@ -30,7 +30,32 @@ export const CUADRILLAS_DEF: Cuadrilla[] = [
   {cx:"Instalación pesada",criterio:"Tubería Ø80–110 mm, tanques y secadores grandes, izaje; con supervisor de obra.",T1:1,T2:1,T3:1,T4:0,T5:1},
   {cx:"Instalación eléctrica",criterio:"Acometidas, canalización, cableado y protecciones de compresores, secadores y drenadores.",T1:1,T2:0,T3:1,T4:0,T5:0},
   {cx:"Pintura – servicio",criterio:"Pistolas, equipos manuales, bombas, inyectores y cabinas pequeñas Gema / Binks.",T1:1,T2:0,T3:0,T4:1,T5:0},
+  {cx:"Control / variadores",criterio:"Variadores de velocidad Parker: mantenimiento, migración, programación y puesta en marcha.",T1:0,T2:0,T3:1,T4:1,T5:0},
   {cx:"Pintura – línea automática",criterio:"Líneas automáticas, reciprocadores, cabinas de recuperación, esmalte cerámico; con ingeniero de servicio.",T1:1,T2:0,T3:1,T4:1,T5:1}
+];
+/** Franjas de potencia (valores de partida, por validar con el taller). La cuadrilla de la franja es la mínima:
+ *  si el trabajo exige una cuadrilla mayor, se usa la del trabajo. */
+export const POTENCIAS_DEF: GrupoPotencia[] = [
+  { k: "piston", n: "Compresor de pistón", franjas: [
+    { n: "1 – 3 HP", hpMin: 1, hpMax: 3, f: 0.8, cx: "Baja" },
+    { n: "5 – 10 HP", hpMin: 5, hpMax: 10, f: 1.0, cx: "Baja" },
+  ] },
+  { k: "tornillo", n: "Compresor de tornillo", franjas: [
+    { n: "5 – 15 HP", hpMin: 5, hpMax: 15, f: 1.0, cx: "Baja" },
+    { n: "20 – 30 HP", hpMin: 20, hpMax: 30, f: 1.3, cx: "Baja" },
+    { n: "50 – 60 HP", hpMin: 50, hpMax: 60, f: 1.6, cx: "Media" },
+    { n: "75 – 100 HP", hpMin: 75, hpMax: 100, f: 1.8, cx: "Media" },
+    { n: "110 – 150 HP", hpMin: 110, hpMax: 150, f: 2.1, cx: "Alta" },
+    { n: "160 – 200 HP", hpMin: 160, hpMax: 200, f: 2.4, cx: "Alta" },
+  ] },
+  { k: "variador", n: "Variador de velocidad Parker", franjas: [
+    { n: "5 – 15 HP", hpMin: 5, hpMax: 15, f: 1.0, cx: "Control / variadores" },
+    { n: "20 – 30 HP", hpMin: 20, hpMax: 30, f: 1.1, cx: "Control / variadores" },
+    { n: "50 – 60 HP", hpMin: 50, hpMax: 60, f: 1.25, cx: "Control / variadores" },
+    { n: "75 – 100 HP", hpMin: 75, hpMax: 100, f: 1.4, cx: "Control / variadores" },
+    { n: "110 – 150 HP", hpMin: 110, hpMax: 150, f: 1.6, cx: "Alta" },
+    { n: "160 – 200 HP", hpMin: 160, hpMax: 200, f: 1.8, cx: "Alta" },
+  ] },
 ];
 export const TAMANOS_DEF: Factor[] = [
   {n:"Pequeño",f:1.0,ref:"Compresor ≤ 15 kW (≤ 20 HP) · Secador ≤ 100 cfm"},
@@ -124,7 +149,15 @@ export const CATALOGO_DEF: ItemCatalogo[] = (() => {
    ["GEN-01",G,CM,"Visita técnica de evaluación","Inspección del sistema de aire comprimido y recomendaciones.","Según solicitud",2,"Baja"],
    ["GEN-02",G,PM,"Detección de fugas con ultrasonido","Recorrido de red, etiquetado y reporte de fugas (por jornada).","Anual",8,"Media"],
    ["GEN-03",G,PM,"Puesta en marcha / comisionamiento","Verificación de instalación, arranque, parámetros y capacitación básica.","Equipo nuevo",4,"Media"]
-  ] as Fila[]).map((r) => ({ cod: String(r[0]), grupo: String(r[1]), tipo: String(r[2]), act: String(r[3]), alcance: String(r[4]), intervalo: String(r[5]), unidad: "equipo", horas: Number(r[6]), cx: String(r[7]), escala: "tamano" as Escala, fam: "mant" as Familia, cert: "" }));
+  ] as Fila[]).map((r) => ({ cod: String(r[0]), grupo: String(r[1]), tipo: String(r[2]), act: String(r[3]), alcance: String(r[4]), intervalo: String(r[5]), unidad: "equipo", horas: Number(r[6]), cx: String(r[7]), escala: (/^(PIS|TOR)-/.test(String(r[0])) ? "potencia" : "tamano") as Escala, fam: "mant" as Familia, cert: "", ...(/^PIS-/.test(String(r[0])) ? { pot: "piston" } : /^TOR-/.test(String(r[0])) ? { pot: "tornillo" } : {}) }));
+  const VP = "Variador de velocidad Parker", CV = "Control / variadores";
+  const vfd: ItemCatalogo[] = ([
+   ["VAR-P01",PM,"Mantenimiento preventivo de variador","Limpieza de disipador y ventiladores, reapriete de borneras, revisión de capacitores del bus DC, historial de fallas, respaldo de parámetros, mediciones de entrada y salida.","Semestral / anual",2,CV],
+   ["VAR-P02",PM,"Puesta en marcha de variador","Verificación de instalación y puesta a tierra, parametrización, autoajuste del motor, lazo de presión, pruebas en carga y capacitación básica.","Equipo nuevo",4,CV],
+   ["VAR-C01",CM,"Diagnóstico de falla de variador","Lectura de alarmas e historial, mediciones de potencia y control, prueba de módulos; informe técnico.","Según evento",2,CV],
+   ["VAR-C02",CM,"Programación / parametrización de variador","Datos del motor, rampas, límites de frecuencia, lazo PID de presión, entradas/salidas y comunicación; pruebas con carga y respaldo de parámetros.","Según evento",3,CV],
+   ["VAR-C03","Instalación","Migración de variador anterior a nuevo modelo Parker","Levantamiento de parámetros y planos del equipo anterior, desmontaje, montaje y cableado del nuevo variador, adaptación del control, parametrización, pruebas y respaldo.","Según proyecto",8,CV]
+  ] as Fila[]).map((r) => ({ cod: String(r[0]), grupo: VP, tipo: String(r[1]), act: String(r[2]), alcance: String(r[3]), intervalo: String(r[4]), unidad: "equipo", horas: Number(r[5]), cx: String(r[6]), escala: "potencia" as Escala, fam: "mant" as Familia, cert: "electrica", pot: "variador" }));
   const A="Red de tubería de aluminio",B="Accesorios y válvulas",C="Bajantes y conexiones",E="Emplazamiento de equipos",F="Tratamiento de aire y drenaje",H="Pruebas y obras complementarias";
   const L="Instalación ligera",I="Instalación",X="Instalación pesada";
   const ins = ([
@@ -218,7 +251,7 @@ export const CATALOGO_DEF: ItemCatalogo[] = (() => {
    ["ESM-P04",PE,PM,"Mantenimiento de sistema automático de esmalte líquido (cocinas)","Bombas, agitación, boquillas, recirculación y control de densidad de la barbotina.","Semestral","global",8.0,PA],
    ["ESM-C01",PE,CM,"Ajuste de espesor y uniformidad de esmalte","Prueba de aplicación, medición de espesor y ajuste de parámetros.","Según evento","global",3.0,PS]
   ] as Fila[]).map((r) => ({ cod: String(r[0]), grupo: String(r[1]), tipo: String(r[2]), act: String(r[3]), alcance: String(r[4]), intervalo: String(r[5]), unidad: String(r[6]), horas: Number(r[7]), cx: String(r[8]), escala: "ninguna" as Escala, fam: "pint" as Familia, cert: "pintura" }));
-  return [...m, ...ins, ...ins2, ...pint];
+  return [...m, ...vfd, ...ins, ...ins2, ...pint];
 })();
 export const CIUDADES_DEF: CiudadCot[] = ([
  ["Guayaquil (urbano)","Guayas","Costa",15],["Durán","Guayas","Costa",18],["Samborondón / La Puntilla","Guayas","Costa",20],

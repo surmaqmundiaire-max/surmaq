@@ -1,5 +1,5 @@
 export type Nivel = "T1" | "T2" | "T3" | "T4" | "T5";
-export type Escala = "tamano" | "altura" | "ninguna";
+export type Escala = "tamano" | "altura" | "ninguna" | "potencia";
 export type Familia = "mant" | "inst" | "pint";
 
 export interface NivelSueldo { cod: string; nombre: string; perfil: string; sueldo: number }
@@ -14,7 +14,10 @@ export interface Factor { n: string; f: number; ref?: string }
 export interface Horario { n: string; rec: number }
 export interface Altura { n: string; f: number; eq: string; costo: number; cert: boolean }
 export interface Entorno { n: string; f: number; nota: string }
-export interface ItemCatalogo { cod: string; grupo: string; tipo: string; act: string; alcance: string; intervalo: string; unidad: string; horas: number; cx: string; escala: Escala; fam: Familia; cert: string }
+export interface ItemCatalogo { cod: string; grupo: string; tipo: string; act: string; alcance: string; intervalo: string; unidad: string; horas: number; cx: string; escala: Escala; fam: Familia; cert: string; /** grupo de franjas de potencia (escala «potencia») */ pot?: string }
+/** Franja de potencia: ajusta el tiempo y fija la cuadrilla mínima según los HP del equipo. */
+export interface FranjaPotencia { n: string; hpMin: number; hpMax: number; f: number; cx: string }
+export interface GrupoPotencia { k: string; n: string; franjas: FranjaPotencia[] }
 export interface CiudadCot { n: string; prov: string; reg: string; km: number; modo: string }
 
 export interface ConfigCot {
@@ -27,12 +30,13 @@ export interface ConfigCot {
   entornos: Entorno[];
   catalogo: ItemCatalogo[];
   ciudades: CiudadCot[];
+  potencias: GrupoPotencia[];
 }
 
 export type EstadoCot = "Borrador" | "Enviada" | "Aprobada" | "Rechazada" | "Ejecutada";
 export const ESTADOS_COT: EstadoCot[] = ["Borrador", "Enviada", "Aprobada", "Rechazada", "Ejecutada"];
 
-export interface LineaCot { cod: string; cant: number; tam: string; alt: string; hor: string; equipoId?: string }
+export interface LineaCot { cod: string; cant: number; tam: string; alt: string; hor: string; equipoId?: string; /** franja de potencia elegida */ pot?: string }
 
 export interface Cotizacion {
   id: string;

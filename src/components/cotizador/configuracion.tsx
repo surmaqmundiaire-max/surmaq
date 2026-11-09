@@ -6,7 +6,7 @@ import { Lock } from "lucide-react";
 import { useStore } from "@/lib/store";
 import { puede } from "@/lib/selectors";
 import { nivelCosto, r2, tarifas } from "@/lib/cotizador/calculo";
-import type { Altura, ConfigCot, Costos, Cuadrilla, Entorno, Factor, Horario, NivelSueldo, Parametros } from "@/lib/cotizador/tipos";
+import type { Altura, ConfigCot, FranjaPotencia, GrupoPotencia, Costos, Cuadrilla, Entorno, Factor, Horario, NivelSueldo, Parametros } from "@/lib/cotizador/tipos";
 import { useAviso } from "../aviso";
 import { cx } from "../ui";
 import type { Base } from "../migas";
@@ -20,7 +20,7 @@ const PARAM_DEF: [string, [keyof Parametros, string, Tipo][]][] = [
   ["Viáticos y distancias", [["ALIM", "Alimentación por persona por día (USD)", "num"], ["HOSP", "Hospedaje por persona por noche (USD)", "num"], ["R_URB", "Radio urbano sin viáticos (km)", "num"], ["D_REG", "Distancia regional (km)", "num"], ["D_PERN", "Distancia de pernocte obligatorio (km)", "num"]]],
   ["Jornada y cobro", [["JORNADA", "Jornada en sitio (h)", "num"], ["JORNADA_MAX", "Jornada máxima con viaje (h)", "num"], ["HMIN", "Horas mínimas por visita", "num"], ["IVA", "IVA (%)", "pct"], ["COBRAR_EQ_ALTURA", "Cobrar equipo de acceso en altura (1 = sí, 0 = no)", "num"]]],
 ];
-const TABS = [["params", "Parámetros"], ["costos", "Sueldos y tarifa"], ["cuadrillas", "Cuadrillas"], ["alturas", "Alturas"], ["entornos", "Tipos de sitio"], ["tamanos", "Tamaños"], ["horarios", "Horarios"]] as const;
+const TABS = [["params", "Parámetros"], ["costos", "Sueldos y tarifa"], ["cuadrillas", "Cuadrillas"], ["alturas", "Alturas"], ["entornos", "Tipos de sitio"], ["potencias", "Franjas de potencia"], ["tamanos", "Tamaños"], ["horarios", "Horarios"]] as const;
 type Tab = (typeof TABS)[number][0];
 const campo = "mt-1 h-10 w-full rounded-lg border border-borde bg-superficie px-2 text-sm";
 
@@ -137,6 +137,34 @@ function Parte({ k, cfg }: { k: Tab; cfg: ConfigCot }) {
     cuerpo = <TablaEditable<Entorno> filas={b.valor as Entorno[]} editable onCambio={lista<Entorno>} onQuitar={quitar} etiquetaAgregar="Agregar tipo de sitio"
       onAgregar={() => agregar({ n: "Nuevo tipo de sitio", f: 1, nota: "" })}
       cols={[{ k: "n", label: "Tipo de sitio", ancho: "220px" }, { k: "f", label: "Factor de tiempo", tipo: "num", step: "0.05", num: true, ancho: "80px" }, { k: "nota", label: "Motivo", ancho: "280px" }]} />;
+  } else if (k === "potencias") {
+    const gs = b.valor as GrupoPotencia[];
+    const setG = (gi: number, franjas: FranjaPotencia[]) => set(gs.map((g, j) => (j === gi ? { ...g, franjas } : g)));
+    cuerpo = (
+      <div className="space-y-5">
+        <p className="text-sm text-tinta-2">Cada franja multiplica las horas del trabajo y fija la cuadrilla mínima. Un equipo con una potencia entre dos franjas se cotiza con la franja siguiente.</p>
+        {gs.map((g, gi) => (
+          <div key={g.k}>
+            <h3 className="mb-2 font-semibold">{g.n}</h3>
+            <TablaEditable<FranjaPotencia>
+              filas={g.franjas}
+              editable
+              cols={[
+                { k: "n", label: "Franja", ancho: "130px" },
+                { k: "hpMin", label: "Desde (HP)", tipo: "num", num: true, ancho: "80px" },
+                { k: "hpMax", label: "Hasta (HP)", tipo: "num", num: true, ancho: "80px" },
+                { k: "f", label: "Factor de tiempo", tipo: "num", step: "0.05", num: true, ancho: "80px" },
+                { k: "cx", label: "Cuadrilla mínima", tipo: "select", opciones: cfg.cuadrillas.map((c) => c.cx), ancho: "170px" },
+              ]}
+              onCambio={(i, c) => setG(gi, g.franjas.map((x, j) => (j === i ? { ...x, ...c } : x)))}
+              onQuitar={(i) => setG(gi, g.franjas.filter((_, j) => j !== i))}
+              onAgregar={() => setG(gi, [...g.franjas, { n: "Nueva franja", hpMin: 0, hpMax: 0, f: 1, cx: "Baja" }])}
+              etiquetaAgregar="Agregar franja"
+            />
+          </div>
+        ))}
+      </div>
+    );
   } else if (k === "tamanos") {
     cuerpo = <TablaEditable<Factor> filas={b.valor as Factor[]} editable onCambio={lista<Factor>} onQuitar={quitar} etiquetaAgregar="Agregar tamaño"
       onAgregar={() => agregar({ n: "Nuevo", f: 1, ref: "" })}

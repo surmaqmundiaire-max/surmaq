@@ -8,7 +8,7 @@ import { AlertTriangle, CalendarPlus, Check, Copy, FileText, Plus, Save, Search,
 import { useStore } from "@/lib/store";
 import { perfil, puede, tecnicos } from "@/lib/selectors";
 import { calcular, CERTS, tarifas, zona, type Resultado } from "@/lib/cotizador/calculo";
-import { ciudadCotDe, kmDesdeBase, tamanoSugerido } from "@/lib/cotizador/config";
+import { ciudadCotDe, franjaSugerida, hpDe, kmDesdeBase, tamanoSugerido } from "@/lib/cotizador/config";
 import { ESTADOS_COT, equiposCot, trabajosCot, type Cotizacion, type Familia, type LineaCot } from "@/lib/cotizador/tipos";
 import { CHECKLISTS } from "@/lib/mock-data";
 import { toLocalIso } from "@/lib/format";
@@ -108,6 +108,10 @@ export function EditorCotizacion({ id, base, prefill }: { id?: string; base: Bas
   const grupos = [...new Set(items.map((x) => x.grupo))];
   const clientesFiltrados = s.clientes.filter((c) => norm(`${c.razonSocial} ${c.ruc}`).includes(norm(qCli))).slice(0, 5);
 
+  const textoEq = (eq?: { nombre: string; datosPlaca?: { potencia?: string } }) => (eq ? `${eq.nombre} ${eq.datosPlaca?.potencia ?? ""}` : "");
+  const potDe = (it: { pot?: string }, eq?: { nombre: string; datosPlaca?: { potencia?: string } }) =>
+    franjaSugerida(cfg.potencias.find((g) => g.k === it.pot), hpDe(textoEq(eq)));
+
   const agregar = () => {
     const it = cfg.catalogo.find((x) => x.cod === (itemSel || items[0]?.cod));
     if (!it) return;
@@ -118,6 +122,7 @@ export function EditorCotizacion({ id, base, prefill }: { id?: string; base: Bas
       alt: cfg.alturas[0].n,
       hor: cfg.horarios[0].n,
       equipoId: eq?.id,
+      ...(it.escala === "potencia" ? { pot: potDe(it, eq) } : {}),
     });
     // Con varios equipos elegidos, la partida se agrega una vez por equipo (cada uno con su tamaño)
     const nuevas = eqsSel.length ? eqsSel.map(nueva) : [nueva()];
@@ -291,7 +296,7 @@ export function EditorCotizacion({ id, base, prefill }: { id?: string; base: Bas
               <div className="rounded-xl border border-dashed border-borde px-4 py-6 text-center text-sm text-tinta-3">
                 <p>Agrega mantenimientos, partidas de instalación o servicios de pintura con el selector de arriba.</p>
                 {editable && !q.clienteId && (
-                  <button type="button" className="mt-2 font-semibold text-marca-700 hover:underline" onClick={() => setQ((x) => ({ ...x, cliente: x.cliente || "Cliente de ejemplo S.A.", contacto: x.contacto || "Jefe de mantenimiento", ciudad: "Cuenca", lugar: "Planta industrial – Parque Industrial", lineas: [{ cod: "TOR-P03", cant: 2, tam: "Mediano", alt: cfg.alturas[0].n, hor: cfg.horarios[0].n }, { cod: "SRF-P03", cant: 1, tam: "Mediano", alt: cfg.alturas[0].n, hor: cfg.horarios[0].n }] }))}>
+                  <button type="button" className="mt-2 font-semibold text-marca-700 hover:underline" onClick={() => setQ((x) => ({ ...x, cliente: x.cliente || "Cliente de ejemplo S.A.", contacto: x.contacto || "Jefe de mantenimiento", ciudad: "Cuenca", lugar: "Planta industrial – Parque Industrial", lineas: [{ cod: "TOR-P03", cant: 2, tam: "Mediano", pot: "20 – 30 HP", alt: cfg.alturas[0].n, hor: cfg.horarios[0].n }, { cod: "SRF-P03", cant: 1, tam: "Mediano", alt: cfg.alturas[0].n, hor: cfg.horarios[0].n }] }))}>
                     Cargar el ejemplo de Cuenca (2 compresores + 1 secador)
                   </button>
                 )}
@@ -323,8 +328,9 @@ export function EditorCotizacion({ id, base, prefill }: { id?: string; base: Bas
                           <label className="col-span-2 text-xs text-tinta-2 @xl:col-span-4">Equipo
                             <select value={l.equipoId ?? ""} onChange={(e) => {
                               const eq = eqsSel.find((x) => x.id === e.target.value);
-                              const tam = eq && it.escala === "tamano" ? tamanoSugerido(`${eq.nombre} ${eq.datosPlaca?.potencia ?? ""}`) : undefined;
-                              setLinea(L.idx, { equipoId: e.target.value || undefined, ...(tam ? { tam } : {}) });
+                              const tam = eq && it.escala === "tamano" ? tamanoSugerido(textoEq(eq)) : undefined;
+                              const pot = eq && it.escala === "potencia" && hpDe(textoEq(eq)) ? potDe(it, eq) : undefined;
+                              setLinea(L.idx, { equipoId: e.target.value || undefined, ...(tam ? { tam } : {}), ...(pot ? { pot } : {}) });
                             }} className={cx(claseCampo, "min-h-10 text-sm")}>
                               <option value="">General (todos los equipos)</option>
                               {eqsSel.map((x) => <option key={x.id} value={x.id}>{x.nombre}</option>)}
@@ -334,7 +340,14 @@ export function EditorCotizacion({ id, base, prefill }: { id?: string; base: Bas
                         <label className="text-xs text-tinta-2">Cantidad ({it.unidad === "m" ? "metros" : it.unidad === "u" ? "unidades" : it.unidad === "equipo" ? "equipos" : it.unidad})
                           <input type="number" min={0} step={1} value={l.cant} onChange={(e) => setLinea(L.idx, { cant: Math.max(0, +e.target.value || 0) })} className={cx(claseCampo, "min-h-10 tabular")} />
                         </label>
-                        {it.escala !== "ninguna" && (
+                        {it.escala === "potencia" && (
+                          <label className="text-xs text-tinta-2">Potencia
+                            <select value={L.escala.n} onChange={(e) => setLinea(L.idx, { pot: e.target.value })} className={cx(claseCampo, "min-h-10 text-sm")}>
+                              {(cfg.potencias.find((g) => g.k === it.pot)?.franjas ?? []).map((a) => <option key={a.n}>{a.n}</option>)}
+                            </select>
+                          </label>
+                        )}
+                        {(it.escala === "altura" || it.escala === "tamano") && (
                           <label className="text-xs text-tinta-2">{it.escala === "altura" ? "Altura" : "Tamaño del equipo"}
                             <select value={it.escala === "altura" ? l.alt : l.tam} onChange={(e) => setLinea(L.idx, it.escala === "altura" ? { alt: e.target.value } : { tam: e.target.value })} className={cx(claseCampo, "min-h-10 text-sm")}>
                               {(it.escala === "altura" ? cfg.alturas : cfg.tamanos).map((a) => <option key={a.n}>{a.n}</option>)}
@@ -345,7 +358,7 @@ export function EditorCotizacion({ id, base, prefill }: { id?: string; base: Bas
                           <select value={l.hor} onChange={(e) => setLinea(L.idx, { hor: e.target.value })} className={cx(claseCampo, "min-h-10 text-sm")}>{cfg.horarios.map((a) => <option key={a.n}>{a.n}</option>)}</select>
                         </label>
                         <div className="text-xs text-tinta-2">Cuadrilla
-                          <p className="mt-1 text-sm text-tinta">{it.cx}<span className="block text-xs text-tinta-3">{L.cr.pers} pers. · {Object.entries(L.cr.comp).map(([k, v]) => `${v}×${k}`).join(" + ")}</span></p>
+                          <p className="mt-1 text-sm text-tinta">{L.cx}{L.cx !== it.cx && <span className="ml-1 rounded bg-info-bg px-1 text-[11px] font-semibold text-info" title={`El trabajo pide «${it.cx}»; por la potencia se usa «${L.cx}»`}>por potencia</span>}<span className="block text-xs text-tinta-3">{L.cr.pers} pers. · {Object.entries(L.cr.comp).map(([k, v]) => `${v}×${k}`).join(" + ")}</span></p>
                         </div>
                       </fieldset>
                       <p className="mt-2 flex flex-wrap justify-end gap-x-4 text-sm tabular">

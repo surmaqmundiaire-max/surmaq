@@ -98,7 +98,7 @@ export default function DocumentoCotizacion({ params }: { params: Promise<{ id: 
               {lineas.map((L) => (
                 <tr key={L.idx}>
                   <td className="font-mono whitespace-nowrap">{L.it!.cod}</td>
-                  <td>{L.it!.act}{nombreEq(q.lineas[L.idx].equipoId) && <span className="font-semibold"> — {nombreEq(q.lineas[L.idx].equipoId)}</span>}<div className="text-[11.5px] text-[#5A6577]">{L.it!.alcance}{L.it!.escala === "altura" ? ` · Altura: ${L.escala.n}` : L.it!.escala === "tamano" ? ` · Tamaño: ${L.escala.n}` : ""}{L.hor.rec ? ` · ${L.hor.n}` : ""}</div></td>
+                  <td>{L.it!.act}{nombreEq(q.lineas[L.idx].equipoId) && <span className="font-semibold"> — {nombreEq(q.lineas[L.idx].equipoId)}</span>}<div className="text-[11.5px] text-[#5A6577]">{L.it!.alcance}{L.it!.escala === "altura" ? ` · Altura: ${L.escala.n}` : L.it!.escala === "tamano" ? ` · Tamaño: ${L.escala.n}` : L.it!.escala === "potencia" ? ` · Potencia: ${L.escala.n}` : ""}{L.hor.rec ? ` · ${L.hor.n}` : ""}</div></td>
                   <td className="text-right whitespace-nowrap tabular">{L.cant} {L.it!.unidad}</td>
                   <td className="text-right tabular">{hrs(L.h)}</td>
                   <td className="text-right tabular">{usd(L.mo)}</td>

@@ -1,4 +1,4 @@
-import type { ConfigCot } from "./tipos";
+import type { ConfigCot, GrupoPotencia } from "./tipos";
 import * as D from "./datos";
 
 export const CONFIG_COT_DEF: ConfigCot = {
@@ -11,7 +11,39 @@ export const CONFIG_COT_DEF: ConfigCot = {
   entornos: D.ENTORNOS_DEF,
   catalogo: D.CATALOGO_DEF,
   ciudades: D.CIUDADES_DEF,
+  potencias: D.POTENCIAS_DEF,
 };
+
+/** Completa una configuración guardada antes de existir las franjas de potencia, sin perder los cambios del usuario. */
+export function migrarConfigCot(cfg?: Partial<ConfigCot>): ConfigCot {
+  if (!cfg) return CONFIG_COT_DEF;
+  const c = { ...CONFIG_COT_DEF, ...cfg } as ConfigCot;
+  if (cfg.potencias) return c;
+  const def = new Map(D.CATALOGO_DEF.map((x) => [x.cod, x]));
+  const catalogo = c.catalogo.map((x) => {
+    const d = def.get(x.cod);
+    return d?.escala === "potencia" && x.escala === "tamano" ? { ...x, escala: d.escala, pot: d.pot } : x;
+  });
+  const cods = new Set(catalogo.map((x) => x.cod));
+  const nuevos = D.CATALOGO_DEF.filter((x) => !cods.has(x.cod));
+  const cuadrillas = [...c.cuadrillas, ...D.CUADRILLAS_DEF.filter((d) => !c.cuadrillas.some((x) => x.cx === d.cx))];
+  return { ...c, catalogo: [...catalogo, ...nuevos], cuadrillas, potencias: D.POTENCIAS_DEF };
+}
+
+/** Potencia en HP leída de un texto («20 HP», «15 kW»). */
+export function hpDe(texto: string): number | undefined {
+  const hp = Number(texto.match(/([\d.,]+)\s*HP/i)?.[1]?.replace(",", "."));
+  if (hp) return hp;
+  const kw = Number(texto.match(/([\d.,]+)\s*kW/i)?.[1]?.replace(",", "."));
+  return kw ? Math.round((kw / 0.746) * 10) / 10 : undefined;
+}
+
+/** Franja de potencia que corresponde a unos HP (los valores entre franjas suben a la siguiente). */
+export function franjaSugerida(g: GrupoPotencia | undefined, hp?: number) {
+  if (!g?.franjas.length) return undefined;
+  if (!hp) return g.franjas[0].n;
+  return (g.franjas.find((f) => hp <= f.hpMax) ?? g.franjas[g.franjas.length - 1]).n;
+}
 
 /** Ciudad del cotizador que corresponde a la ciudad del cliente («Guayaquil» → «Guayaquil (urbano)»). */
 export function ciudadCotDe(ciudad: string, cfg: ConfigCot) {

@@ -6,7 +6,7 @@ import { createContext, useCallback, useContext, useEffect, useMemo, useState } 
 import * as mock from "./mock-data";
 import type { Cliente, Equipo, Pendiente, Perfil, PuestaEnMarcha, Solicitud, TipoTrabajo, Trabajo, Visita } from "./types";
 import type { ConfigCot, Cotizacion } from "./cotizador/tipos";
-import { CONFIG_COT_DEF } from "./cotizador/config";
+import { CONFIG_COT_DEF, migrarConfigCot } from "./cotizador/config";
 import { registro } from "./selectors";
 
 let secuencia = 0;
@@ -265,7 +265,7 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
   useEffect(() => {
     try {
       const raw = localStorage.getItem(KEY);
-      if (raw) setEstado({ ...inicial(), ...JSON.parse(raw) });
+      if (raw) { const g = JSON.parse(raw); setEstado({ ...inicial(), ...g, configCot: migrarConfigCot(g.configCot) }); }
     } catch {}
     setCargado(true);
   }, []);

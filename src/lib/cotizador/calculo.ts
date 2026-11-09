@@ -13,6 +13,7 @@ export function nivelCosto(n: NivelSueldo, c: Costos) {
 export const tarifas = (c: Costos) => c.niveles.map((n) => ({ cod: n.cod, nombre: n.nombre, tarifa: nivelCosto(n, c).tarifa, hora: nivelCosto(n, c).hora }));
 
 const byName = <T extends { n: string }>(arr: T[], n: string): T => arr.find((x) => x.n === n) ?? arr[0];
+export { byName };
 
 export function crew(cfg: ConfigCot, cx: string) {
   const c = cfg.cuadrillas.find((x) => x.cx === cx);
@@ -27,7 +28,7 @@ export function crew(cfg: ConfigCot, cx: string) {
 
 export interface LineaCalculada {
   idx: number; it?: ItemCatalogo; escala: { n: string; f: number; cert?: boolean }; hor: { n: string; rec: number };
-  cant: number; hU: number; h: number; mo: number; co: number; cr: ReturnType<typeof crew>;
+  cant: number; hU: number; h: number; mo: number; co: number; cr: ReturnType<typeof crew>; /** cuadrilla usada (la del trabajo o la de la franja de potencia) */ cx: string;
 }
 
 export function calcular(q: Pick<Cotizacion, "lineas" | "ciudad" | "entorno" | "descuento"> & { kmOverride?: number }, cfg: ConfigCot) {
@@ -42,9 +43,20 @@ export function calcular(q: Pick<Cotizacion, "lineas" | "ciudad" | "entorno" | "
   let HT = 0, MO = 0, CMO = 0;
   q.lineas.forEach((l, idx) => {
     const it = cfg.catalogo.find((x) => x.cod === l.cod);
-    const cr = crew(cfg, it?.cx ?? "");
-    if (!it) { lines.push({ idx, escala: { n: "—", f: 1 }, hor: { n: "", rec: 0 }, cant: 0, hU: 0, h: 0, mo: 0, co: 0, cr }); return; }
-    const escala = it.escala === "altura" ? byName(cfg.alturas, l.alt) : it.escala === "tamano" ? byName(cfg.tamanos, l.tam) : { n: "—", f: 1 };
+    let cr = crew(cfg, it?.cx ?? "");
+    let cx = it?.cx ?? "";
+    if (!it) { lines.push({ idx, escala: { n: "—", f: 1 }, hor: { n: "", rec: 0 }, cant: 0, hU: 0, h: 0, mo: 0, co: 0, cr, cx }); return; }
+    let escala: { n: string; f: number; cert?: boolean } = it.escala === "altura" ? byName(cfg.alturas, l.alt) : it.escala === "tamano" ? byName(cfg.tamanos, l.tam) : { n: "—", f: 1 };
+    if (it.escala === "potencia") {
+      // La franja de potencia ajusta el tiempo y fija la cuadrilla mínima
+      const g = cfg.potencias?.find((x) => x.k === it.pot);
+      const fr = g?.franjas.length ? byName(g.franjas, l.pot ?? "") : undefined;
+      escala = fr ? { n: fr.n, f: fr.f } : { n: "—", f: 1 };
+      if (fr?.cx) {
+        const c2 = crew(cfg, fr.cx);
+        if (c2.rate > cr.rate) { cr = c2; cx = fr.cx; }
+      }
+    }
     const hor = byName(cfg.horarios, l.hor);
     const cant = Math.max(0, +l.cant || 0);
     const hU = it.horas * (+escala.f || 1) * (+ent.f || 1);
@@ -54,7 +66,7 @@ export function calcular(q: Pick<Cotizacion, "lineas" | "ciudad" | "entorno" | "
     HT += h; MO += mo; CMO += co;
     for (const k in cr.comp) need[k] = Math.max(need[k] || 0, cr.comp[k]);
     if (it.escala === "altura") { const a = byName(cfg.alturas, l.alt); if (+a.costo > 0) eqH[a.n] = (eqH[a.n] || 0) + h; }
-    lines.push({ idx, it, escala, hor, cant, hU, h, mo, co, cr });
+    lines.push({ idx, it, escala, hor, cant, hU, h, mo, co, cr, cx });
   });
   let CR = 0, TC = 0, TCc = 0;
   for (const k in need) { CR += need[k]; TC += need[k] * tarifa(k); TCc += need[k] * costoHora(k); }
