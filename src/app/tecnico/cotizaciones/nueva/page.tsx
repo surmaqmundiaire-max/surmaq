@@ -3,7 +3,6 @@
 import { Suspense } from "react";
 import { useSearchParams } from "next/navigation";
 import { EditorCotizacion } from "@/components/cotizador/editor";
-import { BarraVolver } from "@/components/barra-tecnico";
 
 function Contenido() {
   const sp = useSearchParams();
@@ -12,9 +11,8 @@ function Contenido() {
 
 export default function NuevaCotizacion() {
   return (
-    <div className="px-4 pt-2 pb-4">
-      <BarraVolver etiqueta="Cotizaciones" respaldo="/tecnico/cotizaciones" />
+    <>
       <Suspense><Contenido /></Suspense>
-    </div>
+    </>
   );
 }

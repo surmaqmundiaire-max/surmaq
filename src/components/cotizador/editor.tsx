@@ -153,12 +153,13 @@ export function EditorCotizacion({ id, base, prefill }: { id?: string; base: Bas
           </p>
         </div>
         <div className="flex flex-wrap gap-2">
+          {existente && <Link href={`/${base}/cotizaciones/nueva`} className="inline-flex min-h-11 items-center gap-1.5 rounded-xl border border-borde bg-superficie px-3 text-sm font-semibold hover:bg-fondo"><Plus size={16} /> Nueva</Link>}
           {existente && (
             <button type="button" onClick={() => { const nid = s.guardarCotizacion({ ...q, id: undefined, estado: "Borrador", trabajoId: undefined, trabajoIds: undefined, fecha: s.ahora.slice(0, 10), creadoPor: yo.id }); aviso("Copia creada"); router.push(`/${base}/cotizaciones/${nid}`); }}
               className="inline-flex min-h-11 items-center gap-1.5 rounded-xl border border-borde bg-superficie px-3 text-sm font-semibold hover:bg-fondo"><Copy size={16} /> Duplicar</button>
           )}
           {existente && (
-            <a href={`/cotizacion/${existente.id}`} className="inline-flex min-h-11 items-center gap-1.5 rounded-xl border border-borde bg-superficie px-3 text-sm font-semibold hover:bg-fondo"><FileText size={16} /> Documento para el cliente</a>
+            <a href={`/cotizacion/${existente.id}`} className="inline-flex min-h-11 items-center gap-1.5 rounded-xl border border-borde bg-superficie px-3 text-sm font-semibold hover:bg-fondo"><FileText size={16} /> Vista para el cliente</a>
           )}
           <button type="button" disabled={!editable} onClick={() => guardar()} className="inline-flex min-h-11 items-center gap-1.5 rounded-xl bg-marca-800 px-4 text-sm font-semibold text-white hover:bg-marca-900 disabled:opacity-50">
             <Save size={16} /> {existente ? "Guardar cambios" : "Guardar cotización"}
@@ -287,7 +288,14 @@ export function EditorCotizacion({ id, base, prefill }: { id?: string; base: Bas
               </div>
             )}
             {R.lines.length === 0 ? (
-              <p className="rounded-xl border border-dashed border-borde px-4 py-6 text-center text-sm text-tinta-3">Agrega mantenimientos, partidas de instalación o servicios de pintura.</p>
+              <div className="rounded-xl border border-dashed border-borde px-4 py-6 text-center text-sm text-tinta-3">
+                <p>Agrega mantenimientos, partidas de instalación o servicios de pintura con el selector de arriba.</p>
+                {editable && !q.clienteId && (
+                  <button type="button" className="mt-2 font-semibold text-marca-700 hover:underline" onClick={() => setQ((x) => ({ ...x, cliente: x.cliente || "Cliente de ejemplo S.A.", contacto: x.contacto || "Jefe de mantenimiento", ciudad: "Cuenca", lugar: "Planta industrial – Parque Industrial", lineas: [{ cod: "TOR-P03", cant: 2, tam: "Mediano", alt: cfg.alturas[0].n, hor: cfg.horarios[0].n }, { cod: "SRF-P03", cant: 1, tam: "Mediano", alt: cfg.alturas[0].n, hor: cfg.horarios[0].n }] }))}>
+                    Cargar el ejemplo de Cuenca (2 compresores + 1 secador)
+                  </button>
+                )}
+              </div>
             ) : (
               <ul className="space-y-3">
                 {R.lines.map((L) => {

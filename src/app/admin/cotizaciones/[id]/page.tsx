@@ -11,9 +11,9 @@ export default function VerCotizacion({ params }: { params: Promise<{ id: string
   const { cotizaciones } = useStore();
   const existe = cotizaciones.some((c) => c.id === id);
   return (
-    <div className="mx-auto max-w-7xl">
+    <>
       
       {existe ? <EditorCotizacion key={id} id={id} base="admin" /> : <Vacio>No se encontró la cotización.</Vacio>}
-    </div>
+    </>
   );
 }

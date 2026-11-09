@@ -2,7 +2,8 @@
 
 import { use } from "react";
 import { useRouter } from "next/navigation";
-import { ArrowLeft, Printer } from "lucide-react";
+import { ArrowLeft, Copy, Printer } from "lucide-react";
+import { useAviso } from "@/components/aviso";
 import { useStore } from "@/lib/store";
 import { calcular } from "@/lib/cotizador/calculo";
 import { kmDesdeBase } from "@/lib/cotizador/config";
@@ -16,6 +17,7 @@ export default function DocumentoCotizacion({ params }: { params: Promise<{ id: 
   const { id } = use(params);
   const s = useStore();
   const router = useRouter();
+  const aviso = useAviso();
   const q = s.cotizaciones.find((c) => c.id === id);
   if (!q) return <p className="p-6">No se encontró la cotización.</p>;
   const cfg = s.configCot;
@@ -24,6 +26,29 @@ export default function DocumentoCotizacion({ params }: { params: Promise<{ id: 
   const lineas = R.lines.filter((L) => L.it);
   const eqs = equiposCot(q).map((eid) => s.equipos.find((e) => e.id === eid)).filter((e) => !!e);
   const nombreEq = (eid?: string) => (eqs.length > 1 ? eqs.find((e) => e.id === eid)?.nombre : undefined);
+  const copiar = async () => {
+    const txt = [
+      `${P.EMPRESA} – Cotización de servicio técnico ${q.numero}`,
+      `Fecha: ${q.fecha}`,
+      `Cliente: ${q.cliente}${q.ruc ? ` (RUC ${q.ruc})` : ""}`,
+      `Lugar: ${q.ciudad}${q.lugar ? ` – ${q.lugar}` : ""}`,
+      `Duración estimada: ${R.DT} día(s) de trabajo`,
+      "",
+      ...lineas.map((L) => `• ${L.it!.cod} ${L.it!.act}${nombreEq(q.lineas[L.idx].equipoId) ? ` (${nombreEq(q.lineas[L.idx].equipoId)})` : ""} — ${L.cant} ${L.it!.unidad} · ${hrs(L.h)} · ${usd(L.mo)}`),
+      "",
+      `Mano de obra: ${usd(R.S1 - R.DES)}`,
+      `Movilización: ${usd(R.TR + R.CV + R.PA)}`,
+      ...(R.AL + R.HO > 0 ? [`Viáticos: ${usd(R.AL + R.HO)}`] : []),
+      ...R.eq.map((e) => `${e.n}: ${usd(e.total)}`),
+      `Subtotal: ${usd(R.ST)}`,
+      `IVA ${(P.IVA * 100).toFixed(0)} %: ${usd(R.IV)}`,
+      `TOTAL: ${usd(R.TT)}`,
+      ...(q.notas ? ["", `Notas: ${q.notas}`] : []),
+      "",
+      `Validez de la oferta: ${P.VALIDEZ} días.`,
+    ].join("\n");
+    try { await navigator.clipboard.writeText(txt); aviso("Texto copiado: pégalo en el correo o WhatsApp"); } catch { aviso("No se pudo copiar"); }
+  };
   const altura = lineas.some((L) => L.it!.escala === "altura" && (L.escala as { cert?: boolean }).cert);
 
   return (
@@ -31,6 +56,7 @@ export default function DocumentoCotizacion({ params }: { params: Promise<{ id: 
       <div className="mx-auto mb-4 flex max-w-4xl flex-wrap gap-2 print:hidden">
         <button type="button" onClick={() => router.back()} className="inline-flex min-h-11 items-center gap-1 rounded-xl border border-borde bg-superficie px-3 text-sm font-semibold"><ArrowLeft size={16} /> Volver</button>
         <button type="button" onClick={() => window.print()} className="inline-flex min-h-11 items-center gap-1.5 rounded-xl bg-marca-800 px-4 text-sm font-semibold text-white"><Printer size={16} /> Imprimir / guardar PDF</button>
+        <button type="button" onClick={copiar} className="inline-flex min-h-11 items-center gap-1.5 rounded-xl border border-borde bg-superficie px-3 text-sm font-semibold"><Copy size={16} /> Copiar texto</button>
       </div>
       <article className="mx-auto max-w-4xl rounded-2xl bg-white p-6 text-[13px] text-[#152033] shadow-sm sm:p-8 print:rounded-none print:p-0 print:shadow-none">
         <header className="flex flex-wrap justify-between gap-4 border-b-[3px] border-[#1F3864] pb-3">

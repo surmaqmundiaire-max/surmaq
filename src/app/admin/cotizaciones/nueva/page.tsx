@@ -12,9 +12,9 @@ function Contenido() {
 
 export default function NuevaCotizacion() {
   return (
-    <div className="mx-auto max-w-7xl">
+    <>
       
       <Suspense><Contenido /></Suspense>
-    </div>
+    </>
   );
 }
