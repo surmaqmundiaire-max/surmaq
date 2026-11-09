@@ -72,7 +72,7 @@ export function FormSolicitud({ clienteInicial, equipoInicial, tecnicoInicial, f
           </>
         )}
         {cliente && (
-          <div className="grid gap-4 sm:grid-cols-2">
+          <div className="grid gap-4 @xl:grid-cols-2">
             <Campo label="Contacto en el cliente"><input value={contacto} onChange={(e) => setContacto(e.target.value)} className={claseCampo} /></Campo>
             <div>
               <p className="text-sm font-medium text-tinta-2">Departamento de mantenimiento</p>
@@ -85,7 +85,7 @@ export function FormSolicitud({ clienteInicial, equipoInicial, tecnicoInicial, f
       {cliente && (
         <section className="space-y-3">
           <h2 className="font-semibold">2. Equipo</h2>
-          <div className="grid gap-2 sm:grid-cols-2">
+          <div className="grid gap-2 @xl:grid-cols-2">
             {equiposCliente.map((e) => (
               <button key={e.id} type="button" role="radio" aria-checked={equipoId === e.id} onClick={() => setEquipoId(e.id)}
                 className={cx("flex items-center gap-3 rounded-xl border-2 p-2.5 text-left", equipoId === e.id ? "border-marca-800 bg-marca-50" : "border-borde bg-superficie hover:bg-fondo")}>
@@ -100,7 +100,7 @@ export function FormSolicitud({ clienteInicial, equipoInicial, tecnicoInicial, f
 
       <section className="space-y-3">
         <h2 className="font-semibold">3. Trabajo</h2>
-        <div role="radiogroup" aria-label="Tipo" className="grid grid-cols-2 gap-2 sm:grid-cols-5">
+        <div role="radiogroup" aria-label="Tipo" className="grid grid-cols-2 gap-2 @xl:grid-cols-5">
           {(Object.keys(TIPO_LABEL) as TipoTrabajo[]).map((k) => {
             const V = TIPO_VISUAL[k];
             const I = V.icono;
@@ -131,7 +131,7 @@ export function FormSolicitud({ clienteInicial, equipoInicial, tecnicoInicial, f
 
       <section className="space-y-3">
         <h2 className="font-semibold">6. Valores</h2>
-        <div className="grid gap-4 sm:grid-cols-3">
+        <div className="grid gap-4 @xl:grid-cols-3">
           <Campo label="Monto producto (USD)"><input inputMode="decimal" value={montoProducto} onChange={(e) => setMontoProducto(e.target.value.replace(/[^\d.]/g, ""))} placeholder="0" className={claseCampo} /></Campo>
           <Campo label="Monto mano de obra (USD)"><input inputMode="decimal" value={montoManoObra} onChange={(e) => setMontoManoObra(e.target.value.replace(/[^\d.]/g, ""))} placeholder="0" className={claseCampo} /></Campo>
           <Campo label="Factura">

@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { CalendarDays, CheckCircle2, ChevronRight, Clock, MapPin, Navigation, Play, Plus, Timer, type LucideIcon } from "lucide-react";
+import { CalendarDays, CheckCircle2, ChevronRight, Clock, Navigation, Play, Plus, Timer, type LucideIcon } from "lucide-react";
 import { ChipTipo, IconoTipo } from "@/components/visual";
 import { useStore } from "@/lib/store";
 import { contexto, horasVisita, perfil } from "@/lib/selectors";
@@ -124,9 +124,13 @@ export default function Hoy() {
               href={`https://www.google.com/maps/dir/?api=1&destination=${cliente.lat},${cliente.lng}`}
               target="_blank"
               rel="noreferrer"
-              className="mt-3 inline-flex min-h-11 items-center gap-2 text-sm font-semibold text-marca-700"
+              className="mt-3 flex min-h-11 items-start gap-2 text-sm text-marca-700"
             >
-              <Navigation size={16} /> Cómo llegar · <MapPin size={14} /> {cliente.direccion}
+              <Navigation size={18} className="mt-0.5 shrink-0" />
+              <span className="min-w-0">
+                <span className="block font-semibold">Cómo llegar</span>
+                <span className="block text-xs text-tinta-2">{cliente.direccion}{cliente.ciudad ? `, ${cliente.ciudad}` : ""}</span>
+              </span>
             </a>
           )}
         </div>

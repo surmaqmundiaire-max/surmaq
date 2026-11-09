@@ -37,21 +37,23 @@ export default function Pendientes() {
               const { trabajo, cliente } = contexto(s.trabajos, p.trabajoId);
               const dias = diasEntre(p.creadoEn, hoy);
               return (
-                <li key={p.id} className="flex items-center gap-3 px-4 py-3">
+                <li key={p.id} className="flex flex-wrap items-start gap-x-3 gap-y-1.5 px-4 py-3 @lg:flex-nowrap @lg:items-center">
                   <button type="button" role="checkbox" aria-checked={!!p.resueltoEn} aria-label={`Marcar «${p.descripcion}» como resuelto`} onClick={() => { s.resolverPendiente(p.id); aviso(p.resueltoEn ? "Pendiente reabierto" : "Pendiente resuelto", { texto: "Deshacer", onClick: () => s.resolverPendiente(p.id) }); }}
                     className={cx("flex h-7 w-7 shrink-0 items-center justify-center rounded-md border-2", p.resueltoEn ? "border-ok bg-ok text-white" : "border-tinta-3/50 hover:border-marca-700")}>
                     {p.resueltoEn && <Check size={15} strokeWidth={3} />}
                   </button>
-                  <div className="min-w-0 flex-1">
-                    <p className={cx("font-semibold", p.resueltoEn && "text-tinta-3 line-through")}>{p.descripcion}</p>
+                  <div className="min-w-0 flex-1 basis-[calc(100%-2.5rem)] @lg:basis-auto">
+                    <p className={cx("font-semibold break-words", p.resueltoEn && "text-tinta-3 line-through")}>{p.descripcion}</p>
                     <p className="text-sm text-tinta-2">
                       <Link href={`/admin/mantenimientos/${trabajo.id}`} className="text-marca-700 hover:underline">Nº {trabajo.numero}</Link> · {cliente.razonSocial} · {perfil(trabajo.asignadoId).nombre}
                     </p>
                   </div>
+                  <div className="flex w-full items-center gap-3 pl-10 @lg:w-auto @lg:pl-0">
                   <ChipResponsable responsable={p.responsable} />
-                  <span className={cx("w-24 text-right text-xs tabular", !p.resueltoEn && dias >= 3 ? "font-semibold text-aviso" : "text-tinta-3")}>
+                  <span className={cx("text-xs tabular @lg:w-24 @lg:text-right", !p.resueltoEn && dias >= 3 ? "font-semibold text-aviso" : "text-tinta-3")}>
                     {p.resueltoEn ? `Resuelto ${fechaCorta(p.resueltoEn)}` : dias === 0 ? "Hoy" : `Hace ${dias} días`}
                   </span>
+                  </div>
                 </li>
               );
             })}

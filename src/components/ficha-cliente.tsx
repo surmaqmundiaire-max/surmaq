@@ -26,7 +26,7 @@ export function FichaCliente({ id, base }: { id: string; base: Base }) {
         <h1 className="text-2xl font-bold">{c.razonSocial}</h1>
         <p className="mt-1 text-sm text-tinta-2 tabular">{c.ruc ? `RUC ${c.ruc} · ` : ""}{c.industria} · {c.ciudad}</p>
       </header>
-      <section className="grid gap-3 text-sm sm:grid-cols-3">
+      <section className="grid gap-3 text-sm @xl:grid-cols-3">
         {tieneUbic ? (
           <a target="_blank" rel="noreferrer" href={`https://www.google.com/maps/search/?api=1&query=${c.lat},${c.lng}`} className="flex min-h-14 items-center gap-2 rounded-2xl border border-borde bg-superficie px-4 font-medium text-marca-800 hover:bg-fondo">
             <MapPin size={18} className="shrink-0" /> <span className="truncate">{c.direccion || "Ver en el mapa"}</span>

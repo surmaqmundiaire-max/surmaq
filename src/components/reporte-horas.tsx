@@ -110,7 +110,7 @@ export function ReporteHoras({ soloTecnicoId }: { soloTecnicoId?: string }) {
       </section>
 
       {/* Cifras */}
-      <dl className="grid grid-cols-2 gap-3 sm:grid-cols-4">
+      <dl className="grid grid-cols-2 gap-3 @xl:grid-cols-4">
         <Cifra icono={Clock} tono="marca" k="Horas totales" v={hhmm(t.horas)} />
         <Cifra icono={CheckCircle2} tono="ok" k="En horario normal" v={hhmm(t.normales)} />
         <Cifra icono={Moon} tono="aviso" k="Horas extra" v={hhmm(t.extra)} />
@@ -262,8 +262,8 @@ export function ReporteHoras({ soloTecnicoId }: { soloTecnicoId?: string }) {
 
 function Cifra({ k, v, icono, tono }: { k: string; v: string; icono: typeof Clock; tono: "marca" | "ok" | "aviso" | "info" }) {
   return (
-    <div className="flex items-center gap-3 rounded-2xl border border-borde bg-superficie p-3">
-      <Ficha icono={icono} tono={tono} size={38} />
+    <div className="flex flex-col items-start gap-2 rounded-2xl border border-borde bg-superficie p-3 @md:flex-row @md:items-center @md:gap-3">
+      <Ficha icono={icono} tono={tono} size={34} />
       <div>
         <dt className="text-xs text-tinta-2">{k}</dt>
         <dd className={cx("text-xl leading-tight font-semibold tabular", tono === "aviso" && "text-aviso")}>{v}</dd>

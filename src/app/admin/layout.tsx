@@ -104,14 +104,14 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
           </button>
         </div>
       </aside>
-      <main className="min-w-0 px-4 py-5 sm:px-6 lg:px-8 lg:py-7">
+      <main className="@container min-w-0 px-4 py-5 sm:px-6 lg:px-8 lg:py-7">
         <div className="mx-auto flex max-w-7xl flex-wrap items-start justify-between gap-x-4">
           <BuscadorGlobal />
           {/* En celular y tablet el usuario se ve aquí (en escritorio, abajo del menú) */}
-          <label className="mb-4 flex items-center gap-2 text-sm lg:hidden">
+          <label className="mb-4 flex w-full min-w-0 items-center gap-2 text-sm sm:w-auto lg:hidden">
             <Avatar nombre={yo.nombre} size={30} />
             <span className="sr-only">Usuario</span>
-            <select value={yo.id} onChange={(e) => s.setUsuarioActual(e.target.value)} className="h-10 rounded-lg border border-borde bg-superficie px-2 text-sm font-medium">
+            <select value={yo.id} onChange={(e) => s.setUsuarioActual(e.target.value)} className="h-10 min-w-0 flex-1 rounded-lg border border-borde bg-superficie px-2 text-sm font-medium sm:max-w-72">
               {usuariosPanel.map((u) => <option key={u.id} value={u.id}>{u.nombre} · {ROL_LABEL[u.rol]}</option>)}
             </select>
           </label>

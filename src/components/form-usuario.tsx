@@ -34,7 +34,7 @@ export function FormUsuario({ inicial, onGuardado }: { inicial?: Perfil; onGuard
 
   return (
     <div className="space-y-5">
-      <div className="grid gap-4 sm:grid-cols-2">
+      <div className="grid gap-4 @xl:grid-cols-2">
         <Campo label="Nombre completo"><input value={nombre} onChange={(e) => setNombre(e.target.value)} autoComplete="name" className={claseCampo} /></Campo>
         <Campo label="Correo">
           <input type="email" value={email} onChange={(e) => setEmail(e.target.value.trim())} autoComplete="email" aria-invalid={!!email && (!emailOk || duplicado)} className={claseCampo} />
@@ -50,7 +50,7 @@ export function FormUsuario({ inicial, onGuardado }: { inicial?: Perfil; onGuard
 
       <div>
         <p className="text-sm font-medium text-tinta-2">Perfil</p>
-        <div role="radiogroup" aria-label="Perfil" className="mt-1.5 grid gap-2 sm:grid-cols-2">
+        <div role="radiogroup" aria-label="Perfil" className="mt-1.5 grid gap-2 @xl:grid-cols-2">
           {(Object.keys(ROL_LABEL) as Rol[]).map((k) => {
             const I = ROL_VISUAL[k].icono;
             const activo = rol === k;

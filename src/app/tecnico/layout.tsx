@@ -48,7 +48,7 @@ export default function TecnicoLayout({ children }: { children: React.ReactNode 
         </div>
 
         <Recordatorios />
-        <main className={cx("flex-1", !enVisita && "pb-24")}>{children}</main>
+        <main className={cx("@container flex-1", !enVisita && "pb-24")}>{children}</main>
 
         {!enVisita && (
           <nav className="fixed inset-x-0 bottom-0 z-20 mx-auto max-w-md border-t border-borde bg-superficie pb-[env(safe-area-inset-bottom)] sm:absolute">

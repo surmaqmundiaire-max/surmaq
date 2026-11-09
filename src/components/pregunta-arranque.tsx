@@ -53,7 +53,7 @@ export function PreguntaArranque({ equipoId, base, onCerrar }: { equipoId: strin
         </div>
         <button type="button" onClick={onCerrar} aria-label="Cerrar" className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full text-tinta-2 hover:bg-white/60"><X size={18} /></button>
       </div>
-      <div className="mt-4 grid gap-2 sm:grid-cols-3">
+      <div className="mt-4 grid gap-2 @xl:grid-cols-3">
         {base === "tecnico" && (
           <button type="button" onClick={ahora} className="flex min-h-14 items-center justify-center gap-2 rounded-xl bg-t-arr font-semibold text-white hover:brightness-110">
             <Play size={18} fill="currentColor" /> Sí, hacerlo ahora

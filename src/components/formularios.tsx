@@ -53,7 +53,7 @@ export function Chips<T extends string>({ opciones, valor, onChange, etiqueta }:
 
 export function BarraGuardar({ texto, onClick, deshabilitado, ayuda }: { texto: string; onClick: () => void; deshabilitado?: boolean; ayuda?: string }) {
   return (
-    <div className="sticky bottom-0 z-10 -mx-4 mt-6 border-t border-borde bg-superficie/95 px-4 pt-3 pb-[max(12px,env(safe-area-inset-bottom))] backdrop-blur sm:mx-0 sm:rounded-b-2xl">
+    <div className="sticky bottom-0 z-10 -mx-4 mt-6 border-t border-borde bg-superficie/95 px-4 pt-3 pb-[max(12px,env(safe-area-inset-bottom))] backdrop-blur @xl:mx-0 @xl:rounded-b-2xl">
       <button
         type="button"
         onClick={onClick}
@@ -216,7 +216,7 @@ export function FormCliente({ onGuardado }: { onGuardado: (id: string) => void }
         <p className="mt-1 text-xs text-tinta-3">Sirve para verificar después que las entradas se marcan en el lugar correcto.</p>
       </div>
       <Campo label="Industria" opcional><input value={industria} onChange={(e) => setIndustria(e.target.value)} className={claseCampo} /></Campo>
-      <div className="grid gap-4 sm:grid-cols-2">
+      <div className="grid gap-4 @xl:grid-cols-2">
         <Campo label="Persona de contacto" opcional><input value={contacto} onChange={(e) => setContacto(e.target.value)} className={claseCampo} /></Campo>
         <Campo label="Teléfono" opcional><input value={telefono} onChange={(e) => setTelefono(e.target.value)} inputMode="tel" className={claseCampo} /></Campo>
       </div>
@@ -412,7 +412,7 @@ export function FormMantenimiento({ equipoInicial, tecnicoInicial, tipoInicial, 
       <section className="space-y-4">
         <div>
           <p className="text-sm font-medium text-tinta-2">Tipo</p>
-          <div role="radiogroup" aria-label="Tipo" className="mt-1.5 grid grid-cols-2 gap-2 sm:grid-cols-5">
+          <div role="radiogroup" aria-label="Tipo" className="mt-1.5 grid grid-cols-2 gap-2 @xl:grid-cols-5">
             {(Object.keys(TIPO_LABEL) as TipoTrabajo[]).map((k) => {
               const V = TIPO_VISUAL[k];
               const I = V.icono;
@@ -435,8 +435,8 @@ export function FormMantenimiento({ equipoInicial, tecnicoInicial, tipoInicial, 
         <Campo label="Título">
           <input value={titulo} onChange={(ev) => setTitulo(ev.target.value)} placeholder={tituloFinal || "Describe el mantenimiento"} className={claseCampo} />
         </Campo>
-        <div className="grid gap-4 sm:grid-cols-2">
-          <div className="sm:col-span-2"><SelectorTecnico base={base} valor={tecnicoFinal} onChange={setAsignado} /></div>
+        <div className="grid gap-4 @xl:grid-cols-2">
+          <div className="@xl:col-span-2"><SelectorTecnico base={base} valor={tecnicoFinal} onChange={setAsignado} /></div>
           <div>
             <p className="text-sm font-medium text-tinta-2">Lugar</p>
             <Chips etiqueta="Lugar" opciones={[["en_cliente", "En planta del cliente"], ["en_oficina", "En oficina / taller"]]} valor={lugar} onChange={setLugar} />

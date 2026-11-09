@@ -94,8 +94,8 @@ export function Calendario({ eventos, compacto }: { eventos: Evento[]; compacto?
   const cambiarMes = (n: number) => setMes((m) => new Date(m.getFullYear(), m.getMonth() + n, 1));
 
   return (
-    <div className={cx("grid grid-cols-1 gap-4 [&>*]:min-w-0", !compacto && "lg:grid-cols-[minmax(0,1fr)_340px]")}>
-      <section className="rounded-2xl border border-borde bg-superficie p-3 sm:p-4" aria-label="Calendario">
+    <div className={cx("grid grid-cols-1 gap-4 [&>*]:min-w-0", !compacto && "@4xl:grid-cols-[minmax(0,1fr)_340px]")}>
+      <section className="rounded-2xl border border-borde bg-superficie p-3 @xl:p-4" aria-label="Calendario">
         <div className="mb-3 flex items-center justify-between gap-2">
           <button type="button" onClick={() => cambiarMes(-1)} aria-label="Mes anterior" className="flex h-11 w-11 items-center justify-center rounded-full hover:bg-fondo"><ChevronLeft size={20} /></button>
           <div className="text-center">
@@ -122,18 +122,18 @@ export function Calendario({ eventos, compacto }: { eventos: Evento[]; compacto?
                 aria-label={`${fechaLarga(d)}: ${evs.length} ${evs.length === 1 ? "evento" : "eventos"}`}
                 className={cx(
                   "flex flex-col items-stretch gap-1 bg-superficie p-1 text-left align-top transition-colors hover:bg-fondo",
-                  compacto ? "min-h-14" : "min-h-14 sm:min-h-24",
+                  compacto ? "min-h-14" : "min-h-14 @xl:min-h-24",
                   fuera && "bg-fondo/60 text-tinta-3",
                   sel === d && "ring-2 ring-marca-700 ring-inset",
                 )}
               >
-                <span className={cx("mx-auto flex h-7 w-7 items-center justify-center rounded-full text-sm tabular sm:mx-0", d === hoy && "bg-marca-800 font-bold text-white")}>{Number(d.slice(8))}</span>
+                <span className={cx("mx-auto flex h-7 w-7 items-center justify-center rounded-full text-sm tabular @xl:mx-0", d === hoy && "bg-marca-800 font-bold text-white")}>{Number(d.slice(8))}</span>
                 {/* celular: puntos · escritorio: etiquetas */}
-                <span className={cx("flex flex-wrap justify-center gap-0.5", !compacto && "sm:hidden")}>
+                <span className={cx("flex flex-wrap justify-center gap-0.5", !compacto && "@xl:hidden")}>
                   {evs.slice(0, 4).map((e) => <span key={e.id} className={cx("h-1.5 w-1.5 rounded-full", ESTILO[e.tipo].punto)} />)}
                 </span>
                 {!compacto && (
-                  <span className="hidden flex-col gap-0.5 sm:flex">
+                  <span className="hidden flex-col gap-0.5 @xl:flex">
                     {evs.slice(0, 3).map((e) => (
                       <span key={e.id} className={cx("truncate rounded px-1 py-0.5 text-[11px] leading-tight font-medium", ESTILO[e.tipo].chip)}>
                         {e.hora && <span className="tabular">{e.hora} </span>}{e.titulo}

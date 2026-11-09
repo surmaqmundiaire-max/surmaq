@@ -38,7 +38,7 @@ export function FichaEquipo({ id, base }: { id: string; base: "tecnico" | "admin
             <QrCode size={14} /> {e.codigoQr}
           </span>
         </div>
-        <dl className="mt-4 grid grid-cols-2 gap-x-4 gap-y-3 text-sm sm:grid-cols-3">
+        <dl className="mt-4 grid grid-cols-2 gap-x-4 gap-y-3 text-sm @xl:grid-cols-3">
           {[
             ["Marca", e.marca],
             ["Modelo", e.modelo],
@@ -85,7 +85,7 @@ export function FichaEquipo({ id, base }: { id: string; base: "tecnico" | "admin
             </Link>
           ) : (
             <Link href={r.nuevoMantenimiento(id)} className="inline-flex min-h-11 items-center gap-1.5 rounded-xl bg-marca-800 px-4 text-sm font-semibold text-white hover:bg-marca-900">
-              <Plus size={17} /> Nuevo<span className="hidden sm:inline"> mantenimiento</span>
+              <Plus size={17} /> Nuevo<span className="hidden @xl:inline"> mantenimiento</span>
             </Link>
           )}
         </div>

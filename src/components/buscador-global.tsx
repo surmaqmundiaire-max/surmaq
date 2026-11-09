@@ -49,7 +49,7 @@ export function BuscadorGlobal() {
         ];
 
   return (
-    <div className="relative mb-6 max-w-xl">
+    <div className="relative mb-3 w-full max-w-xl sm:mb-6 sm:flex-1">
       <label className="relative block">
         <span className="sr-only">Buscar en todo</span>
         <Search size={17} className="absolute top-1/2 left-3 -translate-y-1/2 text-tinta-3" />

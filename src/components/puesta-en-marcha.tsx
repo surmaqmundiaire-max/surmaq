@@ -127,7 +127,7 @@ export function FormPuesta({ id, base }: { id: string; base: Base }) {
     <div className="space-y-4">
       <header>
         <p className="text-sm text-tinta-2">Nº {p.numero} · {e.nombre} · {getCliente(e.clienteId).razonSocial}</p>
-        <h1 className="text-xl font-bold sm:text-2xl">{pl.titulo}</h1>
+        <h1 className="text-xl font-bold @xl:text-2xl">{pl.titulo}</h1>
         {pl.borrador && <p className="mt-1 rounded-lg bg-aviso-bg px-3 py-2 text-sm text-aviso">Formulario de ejemplo: falta validar las preguntas con Surmaq.</p>}
         <p className="mt-1 text-xs text-tinta-3">Se guarda solo mientras llenas.</p>
       </header>
@@ -153,7 +153,7 @@ export function FormPuesta({ id, base }: { id: string; base: Base }) {
         </ol>
       </nav>
 
-      <section className="rounded-2xl border border-borde bg-superficie p-4 sm:p-5">
+      <section className="rounded-2xl border border-borde bg-superficie p-4 @xl:p-5">
         {paso === 0 && <PasoTecnicos p={p} />}
         {seccion && (
           <>
@@ -174,7 +174,7 @@ export function FormPuesta({ id, base }: { id: string; base: Base }) {
         {paso === pasos.length - 1 && <PasoCierre p={p} faltantes={faltantes.map(({ sec, c }) => `${sec.titulo}: ${c.label}`)} irA={(secId) => setPaso(pasos.findIndex((x) => x.id === secId))} />}
       </section>
 
-      <div className="sticky bottom-0 z-10 -mx-4 grid grid-cols-[auto_1fr] gap-2 border-t border-borde bg-superficie/95 px-4 pt-3 pb-[max(12px,env(safe-area-inset-bottom))] backdrop-blur sm:mx-0 sm:rounded-2xl sm:border">
+      <div className="sticky bottom-0 z-10 -mx-4 grid grid-cols-[auto_1fr] gap-2 border-t border-borde bg-superficie/95 px-4 pt-3 pb-[max(12px,env(safe-area-inset-bottom))] backdrop-blur @xl:mx-0 @xl:rounded-2xl @xl:border">
         <button type="button" disabled={paso === 0} onClick={() => setPaso(paso - 1)} className="flex min-h-14 items-center gap-1 rounded-2xl border border-borde px-4 font-semibold disabled:opacity-40"><ChevronLeft size={18} /> Anterior</button>
         {paso < pasos.length - 1 ? (
           <button type="button" onClick={() => { setPaso(paso + 1); window.scrollTo({ top: 0 }); }} className="flex min-h-14 items-center justify-center gap-1 rounded-2xl bg-marca-800 font-semibold text-white">
@@ -317,7 +317,7 @@ function PasoCierre({ p, faltantes, irA }: { p: PuestaEnMarcha; faltantes: strin
       <h2 className="text-lg font-semibold">Fotos y firmas</h2>
       <div>
         <p className="text-sm font-medium text-tinta-2">Fotos de respaldo</p>
-        <div className="mt-1.5 grid grid-cols-3 gap-2 sm:grid-cols-5">
+        <div className="mt-1.5 grid grid-cols-3 gap-2 @xl:grid-cols-5">
           {p.fotos.map((f, i) => (
             <div key={i} className="relative aspect-square overflow-hidden rounded-xl bg-fondo">
               {/* eslint-disable-next-line @next/next/no-img-element */}
@@ -342,7 +342,7 @@ function PasoCierre({ p, faltantes, irA }: { p: PuestaEnMarcha; faltantes: strin
         <SeccionEtiqueta equipo={e} compacta onPegada={(pg) => s.actualizarEquipo(e.id, pg ? { etiquetaPegadaEn: s.ahora, etiquetaPegadaPor: p.responsableId } : { etiquetaPegadaEn: undefined, etiquetaPegadaPor: undefined })} />
       </div>
 
-      <div className="grid gap-4 sm:grid-cols-2">
+      <div className="grid gap-4 @xl:grid-cols-2">
         <div>
           <p className="text-sm font-medium text-tinta-2">Firma del técnico {p.responsableId && `· ${perfil(p.responsableId).nombre}`}</p>
           <div className="mt-1.5"><Firma valor={p.firmaTecnico} onChange={(f) => s.actualizarPuesta(p.id, { firmaTecnico: f })} /></div>
@@ -401,7 +401,7 @@ function VistaPuesta({ p, base }: { p: PuestaEnMarcha; base: Base }) {
       {pl.secciones.map((sec) => (
         <section key={sec.id} className="rounded-2xl border border-borde bg-superficie p-4 break-inside-avoid">
           <h2 className="mb-2 font-semibold">{sec.titulo}</h2>
-          <dl className="grid gap-x-6 gap-y-1.5 text-sm sm:grid-cols-2">
+          <dl className="grid gap-x-6 gap-y-1.5 text-sm @xl:grid-cols-2">
             {sec.campos.map((c) => (
               <div key={c.id} className="flex items-start justify-between gap-3 border-b border-borde/60 py-1">
                 <dt className="text-tinta-2">{c.label}</dt>
@@ -417,7 +417,7 @@ function VistaPuesta({ p, base }: { p: PuestaEnMarcha; base: Base }) {
           {p.fotos.map((f, i) => <img key={i} src={f} alt={`Foto ${i + 1}`} className="h-28 w-28 rounded-lg object-cover" />)}
         </section>
       )}
-      <section className="grid gap-4 sm:grid-cols-2">
+      <section className="grid gap-4 @xl:grid-cols-2">
         {[["Técnico", perfil(p.responsableId).nombre, p.firmaTecnico], ["Recibí conforme", `${p.recibe?.nombre ?? ""}${p.recibe?.cedula ? ` · C.I. ${p.recibe.cedula}` : ""}`, p.firmaCliente]].map(([k, n, f]) => (
           <div key={k} className="rounded-2xl border border-borde bg-superficie p-4 text-sm">
             <p className="text-tinta-2">{k}</p>

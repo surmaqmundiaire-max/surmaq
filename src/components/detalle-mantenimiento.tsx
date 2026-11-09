@@ -32,20 +32,18 @@ export function DetalleMantenimiento({ id, base }: { id: string; base: Base }) {
     <div className="mx-auto max-w-5xl space-y-6">
       <Migas base={base} trabajoId={id} />
 
-      <header className="flex flex-wrap items-start justify-between gap-4">
-        <div className="flex min-w-0 flex-1 items-start gap-3">
-        <IconoTipo tipo={t.tipo} size={48} />
-        <div className="min-w-0">
-          <p className="flex flex-wrap items-center gap-2 text-sm text-tinta-2 tabular"><span>Mantenimiento Nº {t.numero}</span> <ChipTipo tipo={t.tipo} /></p>
-          <h1 className="text-2xl font-bold">{t.titulo}</h1>
-          <p className="mt-1 text-tinta-2">
+      <header className="flex items-start gap-3">
+        <IconoTipo tipo={t.tipo} size={44} />
+        <div className="min-w-0 flex-1">
+          <p className="flex flex-wrap items-center gap-x-2 gap-y-1 text-sm text-tinta-2 tabular">
+            <span>Mantenimiento Nº {t.numero}</span> <ChipTipo tipo={t.tipo} /> <EstadoTrabajoBadge estado={t.estado} />
+          </p>
+          <h1 className="mt-1 text-xl leading-tight font-bold @xl:text-2xl">{t.titulo}</h1>
+          <p className="mt-1 flex flex-col gap-0.5 @xl:flex-row @xl:flex-wrap @xl:gap-x-3">
             <Link href={r.cliente(cliente.id)} className="font-medium text-marca-700 hover:underline">{cliente.razonSocial}</Link>
-            {" · "}
             <Link href={r.equipo(equipo.id)} className="font-medium text-marca-700 hover:underline">{equipo.nombre}</Link>
           </p>
         </div>
-        </div>
-        <EstadoTrabajoBadge estado={t.estado} />
       </header>
 
       {t.solicitudId && (() => {
@@ -58,16 +56,16 @@ export function DetalleMantenimiento({ id, base }: { id: string; base: Base }) {
         ) : null;
       })()}
 
-      <section className="grid grid-cols-2 gap-4 rounded-2xl border border-borde bg-superficie p-4 text-sm sm:grid-cols-3 lg:grid-cols-5">
+      <section className="grid grid-cols-2 gap-4 rounded-2xl border border-borde bg-superficie p-4 text-sm @xl:grid-cols-3 @4xl:grid-cols-5">
         <Dato k="Técnico" v={perfil(t.asignadoId).nombre} />
         <Dato k="Ingreso" v={fechaCorta(t.fechaIngreso)} />
         <Dato k="Cierre" v={t.fechaCierre ? fechaCorta(t.fechaCierre) : "—"} />
         <Dato k="Horas totales" v={duracion(horas)} />
-        <div className="col-span-2 sm:col-span-1">
+        <div className="col-span-2 @xl:col-span-1">
           <dt className="text-tinta-3">Avance</dt>
           <dd className="mt-1 flex items-center gap-2"><Barra valor={av} /><span className="font-semibold tabular">{av}%</span></dd>
         </div>
-        {t.estadoGeneralEquipo && <div className="col-span-2 sm:col-span-3 lg:col-span-5"><Dato k="Estado general del equipo" v={t.estadoGeneralEquipo} /></div>}
+        {t.estadoGeneralEquipo && <div className="col-span-2 @xl:col-span-3 @4xl:col-span-5"><Dato k="Estado general del equipo" v={t.estadoGeneralEquipo} /></div>}
       </section>
 
       <section>
@@ -78,13 +76,15 @@ export function DetalleMantenimiento({ id, base }: { id: string; base: Base }) {
           <ul className="divide-y divide-borde overflow-hidden rounded-2xl border border-borde bg-superficie">
             {pend.map((p) => (
               <li key={p.id}>
-                <button type="button" role="checkbox" aria-checked={!!p.resueltoEn} onClick={() => s.resolverPendiente(p.id)} className="flex w-full items-center gap-3 px-4 py-3 text-left hover:bg-fondo">
+                <button type="button" role="checkbox" aria-checked={!!p.resueltoEn} onClick={() => s.resolverPendiente(p.id)} className="flex w-full flex-wrap items-start gap-x-3 gap-y-1 px-4 py-3 text-left hover:bg-fondo @lg:flex-nowrap @lg:items-center">
                   <span className={cx("flex h-6 w-6 shrink-0 items-center justify-center rounded-md border-2", p.resueltoEn ? "border-ok bg-ok text-white" : "border-tinta-3/50")}>
                     {p.resueltoEn && <Check size={14} strokeWidth={3} />}
                   </span>
-                  <span className={cx("flex-1", p.resueltoEn && "text-tinta-3 line-through")}>{p.descripcion}</span>
-                  <ChipResponsable responsable={p.responsable} />
-                  <span className="w-16 text-right text-xs text-tinta-3 tabular">{fechaCorta(p.creadoEn)}</span>
+                  <span className={cx("min-w-0 flex-1 basis-[calc(100%-2.25rem)] break-words @lg:basis-auto", p.resueltoEn && "text-tinta-3 line-through")}>{p.descripcion}</span>
+                  <span className="flex w-full items-center gap-3 pl-9 @lg:w-auto @lg:pl-0">
+                    <ChipResponsable responsable={p.responsable} />
+                    <span className="text-xs text-tinta-3 tabular @lg:w-16 @lg:text-right">{fechaCorta(p.creadoEn)}</span>
+                  </span>
                 </button>
               </li>
             ))}
@@ -127,7 +127,7 @@ export function DetalleMantenimiento({ id, base }: { id: string; base: Base }) {
                   </div>
                   <EstadoVisitaBadge estado={v.estado} />
                 </div>
-                <dl className="mt-3 grid grid-cols-2 gap-3 text-sm sm:grid-cols-4">
+                <dl className="mt-3 grid grid-cols-2 gap-3 text-sm @xl:grid-cols-4">
                   <Dato k="Programada" v={`${hora(v.programadaInicio)} – ${hora(v.programadaFin)}`} />
                   <Dato k="Real" v={v.checkinEn ? `${hora(v.checkinEn)} – ${v.checkoutEn ? hora(v.checkoutEn) : "en curso"}` : "—"} />
                   <Dato k="Horas" v={v.checkinEn ? duracion(horasVisita(v, s.ahora)) : "—"} />
