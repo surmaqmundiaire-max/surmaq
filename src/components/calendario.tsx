@@ -35,7 +35,7 @@ export const ESTILO: Record<TipoEvento, { chip: string; punto: string; label: st
 };
 
 /** Arma los eventos del calendario: tareas + mantenimientos que les tocan a los equipos. */
-export function useEventos({ base, tecnicoId, ciudad, equiposDeClientes }: { base: Base; tecnicoId?: string; ciudad?: string; equiposDeClientes?: Set<string> }) {
+export function useEventos({ base, tecnicoId, ciudad, equiposDeClientes, sinEnlaces }: { base: Base; tecnicoId?: string; ciudad?: string; equiposDeClientes?: Set<string>; sinEnlaces?: boolean }) {
   const s = useStore();
   return useMemo(() => {
     const ev: Evento[] = [];
@@ -54,7 +54,7 @@ export function useEventos({ base, tecnicoId, ciudad, equiposDeClientes }: { bas
         detalle: `${v.descripcion} · ${equipo.nombre}${base === "admin" ? ` · ${perfil(v.tecnicoId).nombre}` : ""}`,
         tipo: tipoDe(v),
         tipoTrabajo: trabajo.tipo,
-        href: base === "tecnico" ? `/tecnico/visita/${v.id}` : `/admin/mantenimientos/${v.trabajoId}`,
+        href: sinEnlaces ? "" : base === "tecnico" ? `/tecnico/visita/${v.id}` : `/admin/mantenimientos/${v.trabajoId}`,
       });
     }
     for (const e of s.equipos) {
@@ -62,10 +62,10 @@ export function useEventos({ base, tecnicoId, ciudad, equiposDeClientes }: { bas
       if (equiposDeClientes && !equiposDeClientes.has(e.id)) continue;
       const c = getCliente(e.clienteId);
       if (ciudad && perfil(c.responsableId).ciudad !== ciudad) continue;
-      ev.push({ id: `m-${e.id}`, fecha: e.proximoMantenimiento, titulo: c.razonSocial, detalle: `Le toca mantenimiento: ${e.nombre}`, tipo: "sugerido", href: `/${base}/equipos/${e.id}` });
+      ev.push({ id: `m-${e.id}`, fecha: e.proximoMantenimiento, titulo: c.razonSocial, detalle: `Le toca mantenimiento: ${e.nombre}`, tipo: "sugerido", href: sinEnlaces ? "" : `/${base}/equipos/${e.id}` });
     }
     return ev.sort((a, b) => a.fecha.localeCompare(b.fecha) || (a.hora ?? "99").localeCompare(b.hora ?? "99"));
-  }, [s.visitas, s.trabajos, s.equipos, s.ahora, base, tecnicoId, ciudad, equiposDeClientes]);
+  }, [s.visitas, s.trabajos, s.equipos, s.ahora, base, tecnicoId, ciudad, equiposDeClientes, sinEnlaces]);
 }
 
 export function Calendario({ eventos, compacto }: { eventos: Evento[]; compacto?: boolean }) {
@@ -161,7 +161,7 @@ export function Calendario({ eventos, compacto }: { eventos: Evento[]; compacto?
           <ul className="divide-y divide-borde overflow-hidden rounded-2xl border border-borde bg-superficie">
             {delDia.map((e) => (
               <li key={e.id}>
-                <Link href={e.href} className="flex min-h-16 items-center gap-3 px-4 py-3 hover:bg-fondo active:bg-marca-50">
+                <Fila href={e.href}>
                   <span className="w-11 shrink-0 text-sm font-semibold tabular">{e.hora ?? "—"}</span>
                   {e.tipoTrabajo ? <IconoTipo tipo={e.tipoTrabajo} size={34} /> : <Ficha icono={CalendarClock} tono="aviso" size={34} />}
                   <span className="min-w-0 flex-1">
@@ -171,7 +171,7 @@ export function Calendario({ eventos, compacto }: { eventos: Evento[]; compacto?
                   <span className={cx("inline-flex shrink-0 items-center gap-1 rounded-full px-2 py-0.5 text-xs font-semibold", ESTILO[e.tipo].chip)}>
                     {ESTILO[e.tipo].icono} {ESTILO[e.tipo].label}
                   </span>
-                </Link>
+                </Fila>
               </li>
             ))}
           </ul>
@@ -179,4 +179,9 @@ export function Calendario({ eventos, compacto }: { eventos: Evento[]; compacto?
       </section>
     </div>
   );
+}
+
+function Fila({ href, children }: { href: string; children: React.ReactNode }) {
+  const cls = "flex min-h-16 items-center gap-3 px-4 py-3";
+  return href ? <Link href={href} className={cx(cls, "hover:bg-fondo active:bg-marca-50")}>{children}</Link> : <div className={cls}>{children}</div>;
 }

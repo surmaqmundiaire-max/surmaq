@@ -13,9 +13,10 @@ import { BarraGuardar, Campo, Chips, Programacion, claseCampo, useInicioSugerido
 import { MiniaturaEquipo, TIPO_VISUAL } from "./visual";
 import { norm } from "./filtros";
 import { useAviso } from "./aviso";
+import { SelectorDisponibilidad } from "./disponibilidad";
 import { cx } from "./ui";
 
-export function FormSolicitud({ clienteInicial, equipoInicial, onGuardado }: { clienteInicial?: string; equipoInicial?: string; onGuardado: (id: string) => void }) {
+export function FormSolicitud({ clienteInicial, equipoInicial, tecnicoInicial, fechaInicial, onGuardado }: { clienteInicial?: string; equipoInicial?: string; tecnicoInicial?: string; fechaInicial?: string; onGuardado: (id: string) => void }) {
   const s = useStore();
   const aviso = useAviso();
   const yo = perfil(s.usuarioActualId);
@@ -28,8 +29,9 @@ export function FormSolicitud({ clienteInicial, equipoInicial, onGuardado }: { c
   const [descripcion, setDescripcion] = useState("");
   const [dpto, setDpto] = useState<"Guayaquil" | "Quito">(cliente?.ciudad === "Quito" || yo.ciudad === "Quito" ? "Quito" : "Guayaquil");
   const [fIni, hIni] = useInicioSugerido();
-  const [fecha, setFecha] = useState(fIni);
-  const [hora, setHora] = useState(hIni);
+  const [fecha, setFecha] = useState(fechaInicial ?? fIni);
+  const [hora, setHora] = useState(fechaInicial && fechaInicial !== fIni ? "09:00" : hIni);
+  const [tecnicoPref, setTecnicoPref] = useState(tecnicoInicial ?? "");
   const [dur, setDur] = useState("2");
   const [montoProducto, setMontoProducto] = useState("");
   const [montoManoObra, setMontoManoObra] = useState("");
@@ -121,8 +123,14 @@ export function FormSolicitud({ clienteInicial, equipoInicial, onGuardado }: { c
         <div className="mt-3"><Programacion fecha={fecha} setFecha={setFecha} horaIni={hora} setHoraIni={setHora} dur={dur} setDur={setDur} /></div>
       </section>
 
+      <section>
+        <h2 className="font-semibold">5. Técnico <span className="font-normal text-tinta-3">(opcional)</span></h2>
+        <p className="mb-3 text-sm text-tinta-2">Solo puedes elegir técnicos libres en ese horario. Mira la semana completa en <Link href="/admin/calendario?vista=disponibilidad" className="font-semibold text-marca-700 underline-offset-2 hover:underline">Calendario › Disponibilidad</Link>.</p>
+        <SelectorDisponibilidad ciudad={dpto} fecha={fecha} horaIni={hora} horas={Number(dur)} valor={tecnicoPref} onChange={setTecnicoPref} />
+      </section>
+
       <section className="space-y-3">
-        <h2 className="font-semibold">5. Valores</h2>
+        <h2 className="font-semibold">6. Valores</h2>
         <div className="grid gap-4 sm:grid-cols-3">
           <Campo label="Monto producto (USD)"><input inputMode="decimal" value={montoProducto} onChange={(e) => setMontoProducto(e.target.value.replace(/[^\d.]/g, ""))} placeholder="0" className={claseCampo} /></Campo>
           <Campo label="Monto mano de obra (USD)"><input inputMode="decimal" value={montoManoObra} onChange={(e) => setMontoManoObra(e.target.value.replace(/[^\d.]/g, ""))} placeholder="0" className={claseCampo} /></Campo>
@@ -151,6 +159,7 @@ export function FormSolicitud({ clienteInicial, equipoInicial, onGuardado }: { c
             fechaRequerida: fecha,
             horaRequerida: hora,
             duracionH: Number(dur),
+            tecnicoPreferidoId: tecnicoPref || undefined,
             montoProducto: Number(montoProducto) || 0,
             montoManoObra: Number(montoManoObra) || 0,
             empresaFactura: empresa,

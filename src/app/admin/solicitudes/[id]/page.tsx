@@ -1,18 +1,19 @@
 "use client";
 
 import Link from "next/link";
-import { use, useState } from "react";
+import { use, useCallback, useState } from "react";
 import { useRouter } from "next/navigation";
 import { ArrowLeft, Car, CheckCircle2, Mail, Trash2, XCircle } from "lucide-react";
 import { useStore } from "@/lib/store";
-import { cliente as getCliente, equipo as getEquipo, perfil, puede, ROL_LABEL, tecnicosProgramables } from "@/lib/selectors";
-import { fechaCorta, fechaLarga, hora } from "@/lib/format";
+import { cliente as getCliente, equipo as getEquipo, ocupacion, perfil, puede, ROL_LABEL, tecnicosProgramables } from "@/lib/selectors";
+import { fechaCorta, fechaLarga, hora, toLocalIso } from "@/lib/format";
 import { TIPO_LABEL, VEHICULOS } from "@/lib/mock-data";
 import type { Solicitud, TipoTrabajo } from "@/lib/types";
 import { Avatar, Vacio, cx } from "@/components/ui";
 import { ChipTipo, IconoTipo, MiniaturaEquipo, TIPO_VISUAL } from "@/components/visual";
 import { EstadoSolicitudBadge } from "@/components/solicitud-estado";
-import { Campo, Chips, Programacion, SelectorTecnico, claseCampo } from "@/components/formularios";
+import { Campo, Chips, Programacion, claseCampo } from "@/components/formularios";
+import { SelectorDisponibilidad } from "@/components/disponibilidad";
 import { useAviso } from "@/components/aviso";
 
 export default function SolicitudDetalle({ params }: { params: Promise<{ id: string }> }) {
@@ -56,6 +57,7 @@ export default function SolicitudDetalle({ params }: { params: Promise<{ id: str
             <span className="text-tinta-2">{e.marca} {e.modelo} · serie {e.serie}</span>
           </dd>
         </div>
+        {sol.tecnicoPreferidoId && <Dato k="Técnico preferido" v={perfil(sol.tecnicoPreferidoId).nombre} />}
         {sol.notificarA.length > 0 && <div className="sm:col-span-2 lg:col-span-3"><Dato k="Notificar a" v={sol.notificarA.join(", ")} /></div>}
       </section>
 
@@ -106,13 +108,15 @@ function Revision({ sol, onListo }: { sol: Solicitud; onListo: (ruta: string) =>
   const [dur, setDur] = useState(String(sol.duracionH ?? 2));
   const menosUnaHora = (h: string) => `${String(Math.max(6, Number(h.slice(0, 2)) - 1)).padStart(2, "0")}:${h.slice(3)}`;
   const [salida, setSalida] = useState(menosUnaHora(sol.horaRequerida));
-  const [tecnico, setTecnico] = useState(programables[0]?.id ?? "");
+  const [tecnico, setTecnico] = useState(sol.tecnicoPreferidoId && programables.some((t) => t.id === sol.tecnicoPreferidoId) ? sol.tecnicoPreferidoId : "");
   const [acomp, setAcomp] = useState<string[]>([]);
   const [vehiculo, setVehiculo] = useState(VEHICULOS.find((v) => v.includes(sol.dpto === "Quito" ? "UIO" : "GYE")) ?? VEHICULOS[0]);
   const [rechazando, setRechazando] = useState(false);
   const [motivo, setMotivo] = useState("");
   const [eliminando, setEliminando] = useState(false);
   const cambio = fecha !== sol.fechaRequerida || llegada !== sol.horaRequerida;
+  const finPedido = (() => { const d = new Date(`${fecha}T${llegada}:00`); d.setMinutes(d.getMinutes() + Number(dur) * 60); return toLocalIso(d); })();
+  const elegirTecnico = useCallback((t: string) => { setTecnico(t); setAcomp((a) => a.filter((x) => x !== t)); }, []);
 
   return (
     <section className="space-y-5 rounded-2xl border border-marca-600/30 bg-superficie p-4 sm:p-6" aria-label="Revisión">
@@ -153,17 +157,21 @@ function Revision({ sol, onListo }: { sol: Solicitud; onListo: (ruta: string) =>
         {programables.length === 0 ? (
           <p className="text-sm text-critico">No tienes técnicos de {sol.dpto} a tu cargo.</p>
         ) : (
-          <SelectorTecnico base="admin" ciudad={sol.dpto} valor={tecnico} onChange={(t) => { setTecnico(t); setAcomp(acomp.filter((a) => a !== t)); }} />
+          <>
+            {sol.tecnicoPreferidoId && <p className="text-sm text-tinta-2">El vendedor prefirió a <strong>{perfil(sol.tecnicoPreferidoId).nombre}</strong>{tecnico !== sol.tecnicoPreferidoId ? " (ya no está libre en el horario elegido o lo cambiaste)" : ""}.</p>}
+            <SelectorDisponibilidad ciudad={sol.dpto} fecha={fecha} horaIni={llegada} horas={Number(dur)} valor={tecnico} onChange={elegirTecnico} permitirSinPreferencia={false} />
+          </>
         )}
         <div>
           <p className="text-sm font-medium text-tinta-2">Acompañantes</p>
           <div className="mt-1.5 flex flex-wrap gap-2">
             {programables.filter((t) => t.id !== tecnico).map((t) => {
               const on = acomp.includes(t.id);
+              const ocupado = ocupacion(t.id, `${fecha}T${llegada}:00`, finPedido, s.visitas, s.trabajos).length > 0;
               return (
-                <button key={t.id} type="button" aria-pressed={on} onClick={() => setAcomp(on ? acomp.filter((x) => x !== t.id) : [...acomp, t.id])}
-                  className={cx("inline-flex min-h-11 items-center gap-2 rounded-full border py-1 pr-4 pl-1 text-sm font-medium", on ? "border-marca-800 bg-marca-800 text-white" : "border-borde bg-superficie")}>
-                  <Avatar nombre={t.nombre} size={30} /> {t.nombre.split(" ")[0]}
+                <button key={t.id} type="button" aria-pressed={on} disabled={ocupado && !on} title={ocupado ? "Ocupado en ese horario" : undefined} onClick={() => setAcomp(on ? acomp.filter((x) => x !== t.id) : [...acomp, t.id])}
+                  className={cx("inline-flex min-h-11 items-center gap-2 rounded-full border py-1 pr-4 pl-1 text-sm font-medium disabled:cursor-not-allowed disabled:opacity-45", on ? "border-marca-800 bg-marca-800 text-white" : "border-borde bg-superficie")}>
+                  <Avatar nombre={t.nombre} size={30} /> {t.nombre.split(" ")[0]}{ocupado && !on && " · ocupado"}
                 </button>
               );
             })}

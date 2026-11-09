@@ -22,13 +22,13 @@ export const ROL_LABEL: Record<Rol, string> = {
   vendedor: "Vendedor",
 };
 
-export type Permiso = "programar_tareas" | "gestionar_usuarios" | "ver_panel" | "aprobar_permisos" | "solicitar_visitas" | "aprobar_solicitudes";
+export type Permiso = "programar_tareas" | "gestionar_usuarios" | "ver_panel" | "aprobar_permisos" | "solicitar_visitas" | "aprobar_solicitudes" | "ver_calendario";
 const PERMISOS: Record<Rol, Permiso[]> = {
-  admin: ["programar_tareas", "gestionar_usuarios", "ver_panel", "aprobar_permisos", "solicitar_visitas", "aprobar_solicitudes"],
-  jefe: ["programar_tareas", "gestionar_usuarios", "ver_panel", "aprobar_permisos", "solicitar_visitas", "aprobar_solicitudes"],
-  coordinador: ["programar_tareas", "ver_panel", "solicitar_visitas", "aprobar_solicitudes"],
+  admin: ["programar_tareas", "gestionar_usuarios", "ver_panel", "aprobar_permisos", "solicitar_visitas", "aprobar_solicitudes", "ver_calendario"],
+  jefe: ["programar_tareas", "gestionar_usuarios", "ver_panel", "aprobar_permisos", "solicitar_visitas", "aprobar_solicitudes", "ver_calendario"],
+  coordinador: ["programar_tareas", "ver_panel", "solicitar_visitas", "aprobar_solicitudes", "ver_calendario"],
   tecnico: [],
-  vendedor: ["solicitar_visitas"],
+  vendedor: ["solicitar_visitas", "ver_calendario"],
 };
 export const puede = (rol: Rol, p: Permiso) => PERMISOS[rol].includes(p);
 
@@ -114,4 +114,33 @@ export function distanciaM(lat1: number, lng1: number, lat2: number, lng2: numbe
   const dLng = toRad(lng2 - lng1);
   const a = Math.sin(dLat / 2) ** 2 + Math.cos(toRad(lat1)) * Math.cos(toRad(lat2)) * Math.sin(dLng / 2) ** 2;
   return Math.round(2 * R * Math.asin(Math.sqrt(a)));
+}
+
+// ---------- Disponibilidad de técnicos ----------
+export interface Ocupacion {
+  tipo: "tarea" | "permiso";
+  desde: string;
+  hasta: string;
+  detalle: string;
+}
+
+const RAZON_PERMISO = { permiso: "Permiso", permiso_medico: "Permiso médico", vacaciones: "Vacaciones" } as const;
+
+/** Lo que ocupa a un técnico entre dos momentos: tareas (como responsable o acompañante) y permisos. */
+export function ocupacion(tecnicoId: string, desde: string, hasta: string, visitas: Visita[], trabajos: Trabajo[]): Ocupacion[] {
+  const out: Ocupacion[] = [];
+  for (const v of visitas) {
+    if (v.estado === "cancelada" || v.estado === "finalizada") continue;
+    if (v.tecnicoId !== tecnicoId && !v.acompanantes.includes(tecnicoId)) continue;
+    const fin = v.estado === "en_curso" && v.programadaFin < desde ? desde : v.programadaFin;
+    if (v.programadaInicio < hasta && fin > desde) {
+      out.push({ tipo: "tarea", desde: v.programadaInicio, hasta: v.programadaFin, detalle: contexto(trabajos, v.trabajoId).cliente.razonSocial });
+    }
+  }
+  for (const p of mock.permisos) {
+    if (p.perfilId === tecnicoId && p.aprobado !== false && p.desde < hasta && p.hasta > desde) {
+      out.push({ tipo: "permiso", desde: p.desde, hasta: p.hasta, detalle: RAZON_PERMISO[p.razon] });
+    }
+  }
+  return out.sort((a, b) => a.desde.localeCompare(b.desde));
 }

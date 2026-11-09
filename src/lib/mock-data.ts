@@ -183,11 +183,11 @@ export const permisos: Permiso[] = [
 /** Vehículos de la empresa (placas de ejemplo). */
 export const VEHICULOS = ["Camioneta GYE · GSB-1234", "Furgoneta GYE · GSC-5678", "Camioneta UIO · PCD-9012", "Vehículo particular"];
 
-/** Empresas que facturan (pendiente de confirmar los nombres reales). */
-export const EMPRESAS_FACTURA = ["Surmaq", "Otra empresa del grupo"];
+/** Empresas que facturan. La primera es la opción por defecto. */
+export const EMPRESAS_FACTURA = ["Maquinmotors", "Surmaq"];
 
 export const solicitudes: Solicitud[] = [
-  { id: "s1", numero: 101, vendedorId: "u-vend-gye", clienteId: "c2", contacto: "Ing. María Vera", equipoId: "e3", tipo: "revision", descripcion: "Cliente reporta caída de presión en horas pico", dpto: "Guayaquil", solicitadaEn: t("2026-11-06", "10:20"), fechaRequerida: "2026-11-10", horaRequerida: "09:00", montoProducto: 0, montoManoObra: 180, empresaFactura: "Surmaq", notificarA: ["mvera@plasticospacifico.test"], estado: "ingresada" },
+  { id: "s1", numero: 101, vendedorId: "u-vend-gye", clienteId: "c2", contacto: "Ing. María Vera", equipoId: "e3", tipo: "revision", descripcion: "Cliente reporta caída de presión en horas pico", dpto: "Guayaquil", solicitadaEn: t("2026-11-06", "10:20"), fechaRequerida: "2026-11-10", horaRequerida: "09:00", montoProducto: 0, montoManoObra: 180, empresaFactura: "Maquinmotors", notificarA: ["mvera@plasticospacifico.test"], estado: "ingresada" },
   { id: "s2", numero: 102, vendedorId: "u-vend-uio", clienteId: "c7", contacto: "Dra. Jhoanna Ríos", equipoId: "e9", tipo: "mantenimiento", descripcion: "Mantenimiento preventivo anual del secador", dpto: "Quito", solicitadaEn: t("2026-11-05", "16:45"), fechaRequerida: "2026-11-11", horaRequerida: "10:00", montoProducto: 320, montoManoObra: 150, empresaFactura: "Surmaq", notificarA: [], estado: "ingresada" },
   { id: "s3", numero: 100, vendedorId: "u-vend-gye", clienteId: "c1", contacto: "Julio Alay", equipoId: "e1", tipo: "instalacion", descripcion: "Instalación de secador OMI vendido", dpto: "Guayaquil", solicitadaEn: t("2026-11-03", "11:00"), fechaRequerida: "2026-11-06", horaRequerida: "11:00", montoProducto: 2400, montoManoObra: 250, empresaFactura: "Surmaq", notificarA: [], estado: "programada", revisadaPor: "u-coord-gye", revisadaEn: t("2026-11-03", "15:00"), trabajoId: "t2781", cambioHora: true },
 ];

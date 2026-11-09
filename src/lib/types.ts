@@ -150,6 +150,7 @@ export interface Solicitud {
   montoManoObra?: number;
   empresaFactura?: string;
   notificarA: string[];
+  tecnicoPreferidoId?: string;
   estado: EstadoSolicitud;
   // al revisarla
   revisadaPor?: string;
