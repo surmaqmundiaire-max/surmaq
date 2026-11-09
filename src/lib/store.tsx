@@ -8,6 +8,10 @@ import type { Cliente, Equipo, Pendiente, Perfil, PuestaEnMarcha, Solicitud, Tip
 import type { ConfigCot, Cotizacion } from "./cotizador/tipos";
 import { CONFIG_COT_DEF } from "./cotizador/config";
 import { registro } from "./selectors";
+
+let secuencia = 0;
+/** Id único aunque se creen varios registros en el mismo milisegundo. */
+const nuevoId = (prefijo: string) => `${prefijo}-${Date.now().toString(36)}${(secuencia++).toString(36)}`;
 import { toLocalIso } from "./format";
 
 interface Estado {
@@ -58,14 +62,14 @@ function useAcciones(set: React.Dispatch<React.SetStateAction<Estado>>, ahora: (
       setTecnicoActual: (id: string) => set((s) => ({ ...s, tecnicoActualId: id })),
       setUsuarioActual: (id: string) => set((s) => ({ ...s, usuarioActualId: id })),
       agregarPerfil: (p: Omit<Perfil, "id">) => {
-        const id = `u-${Date.now()}`;
+        const id = nuevoId("u");
         set((s) => ({ ...s, perfiles: [...s.perfiles, { ...p, id, activo: true }] }));
         return id;
       },
       actualizarPerfil: (id: string, cambios: Partial<Perfil>) =>
         set((s) => ({ ...s, perfiles: s.perfiles.map((p) => (p.id === id ? { ...p, ...cambios } : p)) })),
       crearSolicitud: (sol: Omit<Solicitud, "id" | "numero" | "solicitadaEn" | "estado">) => {
-        const id = `s-${Date.now()}`;
+        const id = nuevoId("s");
         set((s) => ({
           ...s,
           solicitudes: [...s.solicitudes, { ...sol, id, numero: Math.max(99, ...s.solicitudes.map((x) => x.numero)) + 1, solicitadaEn: ahora(), estado: "ingresada" }],
@@ -82,7 +86,7 @@ function useAcciones(set: React.Dispatch<React.SetStateAction<Estado>>, ahora: (
         id: string,
         p: { por: string; tecnicoId: string; acompanantes: string[]; vehiculo: string; fecha: string; horaSalida: string; horaLlegada: string; horas: number; tipo: TipoTrabajo; descripcion: string },
       ) => {
-        const trabajoId = `t-${Date.now()}`;
+        const trabajoId = nuevoId("t");
         set((s) => {
           const sol = s.solicitudes.find((x) => x.id === id)!;
           const ini = `${p.fecha}T${p.horaLlegada}:00`;
@@ -104,7 +108,7 @@ function useAcciones(set: React.Dispatch<React.SetStateAction<Estado>>, ahora: (
             montoManoObra: sol.montoManoObra,
           };
           const visita: Visita = {
-            id: `v-${Date.now()}`,
+            id: nuevoId("v"),
             trabajoId,
             tecnicoId: p.tecnicoId,
             descripcion: p.descripcion,
@@ -134,7 +138,7 @@ function useAcciones(set: React.Dispatch<React.SetStateAction<Estado>>, ahora: (
         return trabajoId;
       },
       crearPuesta: (p: Omit<PuestaEnMarcha, "id" | "numero" | "creadaEn" | "estado" | "fotos">) => {
-        const id = `pem-${Date.now()}`;
+        const id = nuevoId("pem");
         set((s) => ({
           ...s,
           puestas: [...s.puestas, { ...p, id, numero: Math.max(1800, ...s.puestas.map((x) => x.numero)) + 1, creadaEn: ahora(), estado: "borrador", fotos: [] }],
@@ -149,7 +153,7 @@ function useAcciones(set: React.Dispatch<React.SetStateAction<Estado>>, ahora: (
         set((s) => ({ ...s, puestas: s.puestas.map((x) => (x.id === id ? { ...x, estado: "completada", completadaEn: ahora() } : x)) })),
       /** Crea o actualiza una cotización (numerada COT-0001, COT-0002…). */
       guardarCotizacion: (q: Omit<Cotizacion, "id" | "numero" | "creadoEn" | "actualizado"> & { id?: string }) => {
-        const id = q.id ?? `cot-${Date.now()}`;
+        const id = q.id ?? nuevoId("cot");
         set((s) => {
           const existe = s.cotizaciones.find((x) => x.id === id);
           if (existe) return { ...s, cotizaciones: s.cotizaciones.map((x) => (x.id === id ? { ...x, ...q, id, actualizado: ahora() } : x)) };
@@ -185,13 +189,13 @@ function useAcciones(set: React.Dispatch<React.SetStateAction<Estado>>, ahora: (
         patchVisita(id, (v) => ({ fotos: [...v.fotos, { url, momento }] })),
       quitarFoto: (id: string, idx: number) => patchVisita(id, (v) => ({ fotos: v.fotos.filter((_, i) => i !== idx) })),
       agregarCliente: (c: Omit<Cliente, "id">) => {
-        const id = `c-${Date.now()}`;
+        const id = nuevoId("c");
         set((s) => ({ ...s, clientes: [...s.clientes, { ...c, id }] }));
         return id;
       },
       /** Crea un mantenimiento (trabajo) con el siguiente número correlativo. */
       agregarTrabajo: (t: Omit<Trabajo, "id" | "numero">) => {
-        const id = `t-${Date.now()}`;
+        const id = nuevoId("t");
         set((s) => ({ ...s, trabajos: [...s.trabajos, { ...t, id, numero: Math.max(0, ...s.trabajos.map((x) => x.numero)) + 1 }] }));
         return id;
       },
@@ -199,19 +203,19 @@ function useAcciones(set: React.Dispatch<React.SetStateAction<Estado>>, ahora: (
       registrarSalidaOlvidada: (id: string, salida: string) =>
         patchVisita(id, { estado: "finalizada", checkoutEn: salida, salidaCorregida: true }),
       agregarEquipo: (e: Omit<Equipo, "id" | "codigoQr">) => {
-        const id = `e-${Date.now()}`;
+        const id = nuevoId("e");
         set((s) => ({ ...s, equipos: [...s.equipos, { ...e, id, codigoQr: `OS-${id.slice(-5).toUpperCase()}` }] }));
         return id;
       },
       actualizarEquipo: (id: string, cambios: Partial<Equipo>) =>
         set((s) => ({ ...s, equipos: s.equipos.map((e) => (e.id === id ? { ...e, ...cambios } : e)) })),
       agregarVisita: (v: Omit<Visita, "id">) => {
-        const id = `v-${Date.now()}`;
+        const id = nuevoId("v");
         set((s) => ({ ...s, visitas: [...s.visitas, { ...v, id }] }));
         return id;
       },
       agregarPendiente: (p: Omit<Pendiente, "id" | "creadoEn">) => {
-        const id = `p-${Date.now()}`;
+        const id = nuevoId("p");
         set((s) => ({ ...s, pendientes: [...s.pendientes, { ...p, id, creadoEn: ahora() }] }));
         return id;
       },

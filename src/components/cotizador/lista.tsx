@@ -6,7 +6,7 @@ import { ChevronRight, Plus, Search } from "lucide-react";
 import { useStore } from "@/lib/store";
 import { perfil } from "@/lib/selectors";
 import { fechaCorta } from "@/lib/format";
-import { ESTADOS_COT } from "@/lib/cotizador/tipos";
+import { ESTADOS_COT, equiposCot } from "@/lib/cotizador/tipos";
 import { norm } from "../filtros";
 import { Vacio, cx } from "../ui";
 import { ESTILO_ESTADO, usd, useUsuarioCot } from "./editor";
@@ -60,7 +60,7 @@ export function ListaCotizaciones({ base }: { base: Base }) {
                 <span className="min-w-0 flex-1">
                   <span className="flex flex-wrap items-center gap-2"><span className="font-mono text-sm font-semibold">{c.numero}</span><span className={cx("rounded-full px-2 py-0.5 text-xs font-semibold", ESTILO_ESTADO[c.estado])}>{c.estado}</span></span>
                   <span className="block truncate font-semibold">{c.cliente}</span>
-                  <span className="block truncate text-sm text-tinta-2">{c.ciudad} · {c.lineas.length} trabajo(s) · {fechaCorta(c.fecha)} · {perfil(c.creadoPor).nombre}</span>
+                  <span className="block truncate text-sm text-tinta-2">{c.ciudad} · {c.lineas.length} trabajo(s){equiposCot(c).length > 1 ? ` · ${equiposCot(c).length} equipos` : ""} · {fechaCorta(c.fecha)} · {perfil(c.creadoPor).nombre}</span>
                 </span>
                 <span className="shrink-0 text-right font-semibold tabular">{usd(c.total)}</span>
                 <ChevronRight size={18} className="shrink-0 text-tinta-3" />

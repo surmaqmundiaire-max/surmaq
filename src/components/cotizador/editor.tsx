@@ -4,12 +4,12 @@
 import Link from "next/link";
 import { useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
-import { AlertTriangle, CalendarPlus, Copy, FileText, Plus, Save, Search, Trash2, Users } from "lucide-react";
+import { AlertTriangle, CalendarPlus, Check, Copy, FileText, Plus, Save, Search, Trash2, Users } from "lucide-react";
 import { useStore } from "@/lib/store";
 import { perfil, puede, tecnicos } from "@/lib/selectors";
 import { calcular, CERTS, tarifas, zona, type Resultado } from "@/lib/cotizador/calculo";
 import { ciudadCotDe, kmDesdeBase, tamanoSugerido } from "@/lib/cotizador/config";
-import { ESTADOS_COT, type Cotizacion, type Familia, type LineaCot } from "@/lib/cotizador/tipos";
+import { ESTADOS_COT, equiposCot, trabajosCot, type Cotizacion, type Familia, type LineaCot } from "@/lib/cotizador/tipos";
 import { CHECKLISTS } from "@/lib/mock-data";
 import { toLocalIso } from "@/lib/format";
 import type { Perfil, TipoTrabajo } from "@/lib/types";
@@ -17,7 +17,7 @@ import { claseCampo, Campo } from "../formularios";
 import { norm } from "../filtros";
 import { useAviso } from "../aviso";
 import { Avatar, cx } from "../ui";
-import { IconoTipo } from "../visual";
+import { IconoTipo, MiniaturaEquipo } from "../visual";
 import type { Base } from "../migas";
 
 export const usd = (n: number) => "$ " + (Number(n) || 0).toLocaleString("es-EC", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
@@ -49,7 +49,11 @@ export function EditorCotizacion({ id, base, prefill }: { id?: string; base: Bas
   const existente = id ? s.cotizaciones.find((x) => x.id === id) : undefined;
 
   const [q, setQ] = useState<Borrador>(() => {
-    if (existente) return { ...existente, lineas: existente.lineas.map((l) => ({ ...l })), asig: { ...existente.asig } };
+    if (existente) {
+      const eqs = equiposCot(existente);
+      // Las cotizaciones antiguas de un solo equipo asocian todas sus partidas a ese equipo
+      return { ...existente, equipoIds: eqs, equipoId: undefined, lineas: existente.lineas.map((l) => ({ ...l, equipoId: l.equipoId ?? (eqs.length === 1 ? eqs[0] : undefined) })), asig: { ...existente.asig } };
+    }
     const sol = prefill?.solicitudId ? s.solicitudes.find((x) => x.id === prefill.solicitudId) : undefined;
     const eqId = prefill?.equipoId ?? sol?.equipoId;
     const eq = eqId ? s.equipos.find((x) => x.id === eqId) : undefined;
@@ -59,7 +63,7 @@ export function EditorCotizacion({ id, base, prefill }: { id?: string; base: Bas
     return {
       fecha: s.ahora.slice(0, 10),
       clienteId: c?.id,
-      equipoId: eq?.id,
+      equipoIds: eq ? [eq.id] : [],
       solicitudId: sol?.id,
       cliente: c?.razonSocial ?? "",
       ruc: c?.ruc ?? "",
@@ -88,7 +92,16 @@ export function EditorCotizacion({ id, base, prefill }: { id?: string; base: Bas
   const verCostos = puede(yo.rol, "ver_costos");
   const aprueba = puede(yo.rol, "aprobar_cotizaciones");
   const editable = !existente || q.estado === "Borrador" || aprueba;
-  const eqSel = q.equipoId ? s.equipos.find((e) => e.id === q.equipoId) : undefined;
+  const eqIds = q.equipoIds ?? [];
+  const eqsSel = eqIds.map((id) => s.equipos.find((e) => e.id === id)).filter((e) => !!e);
+  const eqsCliente = q.clienteId ? s.equipos.filter((e) => e.clienteId === q.clienteId) : [];
+  const nombreEq = (id?: string) => s.equipos.find((e) => e.id === id)?.nombre;
+  const alternarEquipo = (id: string) =>
+    setQ((x) => {
+      const ids = x.equipoIds ?? [];
+      if (ids.includes(id)) return { ...x, equipoIds: ids.filter((i) => i !== id), lineas: x.lineas.map((l) => (l.equipoId === id ? { ...l, equipoId: undefined } : l)) };
+      return { ...x, equipoIds: [...ids, id] };
+    });
   const set = <K extends keyof Borrador>(k: K, v: Borrador[K]) => setQ((x) => ({ ...x, [k]: v }));
   const setLinea = (i: number, c: Partial<LineaCot>) => setQ((x) => ({ ...x, lineas: x.lineas.map((l, j) => (j === i ? { ...l, ...c } : l)) }));
   const items = cfg.catalogo.filter((x) => x.fam === famSel);
@@ -98,8 +111,18 @@ export function EditorCotizacion({ id, base, prefill }: { id?: string; base: Bas
   const agregar = () => {
     const it = cfg.catalogo.find((x) => x.cod === (itemSel || items[0]?.cod));
     if (!it) return;
-    const tamEq = eqSel ? tamanoSugerido(`${eqSel.nombre} ${eqSel.datosPlaca?.potencia ?? ""}`) : undefined;
-    setQ((x) => ({ ...x, lineas: [...x.lineas, { cod: it.cod, cant: it.unidad === "m" ? 10 : 1, tam: tamEq ?? cfg.tamanos[0].n, alt: cfg.alturas[0].n, hor: cfg.horarios[0].n }] }));
+    const nueva = (eq?: (typeof eqsSel)[number]): LineaCot => ({
+      cod: it.cod,
+      cant: it.unidad === "m" ? 10 : 1,
+      tam: (eq && tamanoSugerido(`${eq.nombre} ${eq.datosPlaca?.potencia ?? ""}`)) ?? cfg.tamanos[0].n,
+      alt: cfg.alturas[0].n,
+      hor: cfg.horarios[0].n,
+      equipoId: eq?.id,
+    });
+    // Con varios equipos elegidos, la partida se agrega una vez por equipo (cada uno con su tamaño)
+    const nuevas = eqsSel.length ? eqsSel.map(nueva) : [nueva()];
+    setQ((x) => ({ ...x, lineas: [...x.lineas, ...nuevas] }));
+    if (nuevas.length > 1) aviso(`${it.act}: agregado para ${nuevas.length} equipos`);
   };
 
   const guardar = (cambios?: Partial<Borrador>) => {
@@ -131,7 +154,7 @@ export function EditorCotizacion({ id, base, prefill }: { id?: string; base: Bas
         </div>
         <div className="flex flex-wrap gap-2">
           {existente && (
-            <button type="button" onClick={() => { const nid = s.guardarCotizacion({ ...q, id: undefined, estado: "Borrador", trabajoId: undefined, fecha: s.ahora.slice(0, 10), creadoPor: yo.id }); aviso("Copia creada"); router.push(`/${base}/cotizaciones/${nid}`); }}
+            <button type="button" onClick={() => { const nid = s.guardarCotizacion({ ...q, id: undefined, estado: "Borrador", trabajoId: undefined, trabajoIds: undefined, fecha: s.ahora.slice(0, 10), creadoPor: yo.id }); aviso("Copia creada"); router.push(`/${base}/cotizaciones/${nid}`); }}
               className="inline-flex min-h-11 items-center gap-1.5 rounded-xl border border-borde bg-superficie px-3 text-sm font-semibold hover:bg-fondo"><Copy size={16} /> Duplicar</button>
           )}
           {existente && (
@@ -170,18 +193,10 @@ export function EditorCotizacion({ id, base, prefill }: { id?: string; base: Bas
             <fieldset disabled={!editable} className="grid grid-cols-1 gap-3 @xl:grid-cols-2">
               <Campo label="Cliente">
                 <input value={q.cliente} onChange={(e) => set("cliente", e.target.value)} className={claseCampo} />
-                {q.clienteId && <button type="button" className="mt-1 text-xs font-semibold text-marca-700" onClick={() => setQ((x) => ({ ...x, clienteId: undefined, equipoId: undefined }))}>Cambiar cliente</button>}
+                {q.clienteId && <button type="button" className="mt-1 text-xs font-semibold text-marca-700" onClick={() => setQ((x) => ({ ...x, clienteId: undefined, equipoIds: [], lineas: x.lineas.map((l) => ({ ...l, equipoId: undefined })) }))}>Cambiar cliente</button>}
               </Campo>
               <Campo label="RUC" opcional><input value={q.ruc} onChange={(e) => set("ruc", e.target.value)} inputMode="numeric" className={claseCampo} /></Campo>
               <Campo label="Contacto" opcional><input value={q.contacto} onChange={(e) => set("contacto", e.target.value)} className={claseCampo} /></Campo>
-              {q.clienteId && (
-                <Campo label="Equipo" opcional>
-                  <select value={q.equipoId ?? ""} onChange={(e) => set("equipoId", e.target.value || undefined)} className={claseCampo}>
-                    <option value="">— Sin equipo específico —</option>
-                    {s.equipos.filter((e) => e.clienteId === q.clienteId).map((e) => <option key={e.id} value={e.id}>{e.nombre} · {e.marca} {e.modelo}</option>)}
-                  </select>
-                </Campo>
-              )}
               <Campo label="Ciudad / lugar">
                 <select value={q.ciudad} onChange={(e) => set("ciudad", e.target.value)} className={claseCampo}>
                   {["Costa", "Sierra", "Amazonía", "Insular"].map((reg) => (
@@ -201,6 +216,41 @@ export function EditorCotizacion({ id, base, prefill }: { id?: string; base: Bas
               </Campo>
               <Campo label="Fecha tentativa del trabajo" opcional><input type="date" value={q.fechaTrabajo} onChange={(e) => set("fechaTrabajo", e.target.value)} className={claseCampo} /></Campo>
             </fieldset>
+            {q.clienteId && (
+              <fieldset disabled={!editable} className="mt-4">
+                <legend className="flex w-full flex-wrap items-baseline justify-between gap-2 text-sm font-medium">
+                  <span>Equipos a cotizar <span className="font-normal text-tinta-3">(puedes elegir varios)</span></span>
+                  {eqsCliente.length > 1 && editable && (
+                    <button type="button" className="text-xs font-semibold text-marca-700" onClick={() => setQ((x) => ({ ...x, equipoIds: eqIds.length === eqsCliente.length ? [] : eqsCliente.map((e) => e.id), lineas: eqIds.length === eqsCliente.length ? x.lineas.map((l) => ({ ...l, equipoId: undefined })) : x.lineas }))}>
+                      {eqIds.length === eqsCliente.length ? "Quitar todos" : "Elegir todos"}
+                    </button>
+                  )}
+                </legend>
+                {eqsCliente.length === 0 ? (
+                  <p className="mt-2 rounded-xl border border-dashed border-borde px-3 py-3 text-sm text-tinta-3">Este cliente aún no tiene equipos registrados.</p>
+                ) : (
+                  <ul className="mt-2 grid grid-cols-1 gap-2 @xl:grid-cols-2">
+                    {eqsCliente.map((e) => {
+                      const on = eqIds.includes(e.id);
+                      const n = q.lineas.filter((l) => l.equipoId === e.id).length;
+                      return (
+                        <li key={e.id}>
+                          <button type="button" role="checkbox" aria-checked={on} onClick={() => alternarEquipo(e.id)}
+                            className={cx("flex min-h-14 w-full items-center gap-3 rounded-xl border px-3 py-2 text-left text-sm", on ? "border-marca-700 bg-marca-50 ring-1 ring-marca-700" : "border-borde bg-superficie hover:bg-fondo")}>
+                            <span className={cx("flex h-5 w-5 shrink-0 items-center justify-center rounded border", on ? "border-marca-800 bg-marca-800 text-white" : "border-tinta-3")}>{on && <Check size={14} strokeWidth={3} />}</span>
+                            <MiniaturaEquipo linea={e.lineaProducto} foto={e.fotoUrl} size={36} />
+                            <span className="min-w-0 flex-1">
+                              <span className="block truncate font-semibold">{e.nombre}</span>
+                              <span className="block truncate text-xs text-tinta-2">{e.marca} {e.modelo}{on && n ? ` · ${n} trabajo(s)` : ""}</span>
+                            </span>
+                          </button>
+                        </li>
+                      );
+                    })}
+                  </ul>
+                )}
+              </fieldset>
+            )}
             <p className="mt-3 flex flex-wrap gap-x-4 gap-y-1 text-sm text-tinta-2">
               <span>Distancia: <b className="tabular">{R.aereo ? "vía aérea" : `${Math.round(R.km)} km`}</b>{km !== undefined && " (estimada desde Quito)"}</span>
               <span>Ida: <b className="tabular">{hrs(R.ida)}</b></span>
@@ -232,7 +282,7 @@ export function EditorCotizacion({ id, base, prefill }: { id?: string; base: Bas
                       {grupos.map((g) => <optgroup key={g} label={g}>{items.filter((x) => x.grupo === g).map((x) => <option key={x.cod} value={x.cod}>{x.cod} · {x.act}</option>)}</optgroup>)}
                     </select>
                   </label>
-                  <button type="button" onClick={agregar} className="inline-flex min-h-12 items-center justify-center gap-1.5 rounded-xl bg-marca-800 px-4 font-semibold text-white"><Plus size={18} /> Agregar</button>
+                  <button type="button" onClick={agregar} className="inline-flex min-h-12 items-center justify-center gap-1.5 rounded-xl bg-marca-800 px-4 font-semibold text-white"><Plus size={18} /> Agregar{eqsSel.length > 1 ? ` a ${eqsSel.length} equipos` : ""}</button>
                 </div>
               </div>
             )}
@@ -256,10 +306,23 @@ export function EditorCotizacion({ id, base, prefill }: { id?: string; base: Bas
                             {it.cert && <span className="rounded bg-aviso-bg px-1.5 py-0.5 text-aviso">Cert. {it.cert === "electrica" ? "eléctrica" : it.cert}</span>}
                           </p>
                           <p className="mt-1 text-xs text-tinta-3">{it.alcance}</p>
+                          {l.equipoId && eqsSel.length <= 1 && <p className="mt-1 inline-flex max-w-full items-center rounded-md bg-marca-50 px-1.5 py-0.5 text-xs font-semibold text-marca-800"><span className="truncate">{nombreEq(l.equipoId)}</span></p>}
                         </div>
                         {editable && <button type="button" aria-label={`Quitar ${it.act}`} onClick={() => set("lineas", q.lineas.filter((_, j) => j !== L.idx))} className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg text-tinta-3 hover:bg-critico-bg hover:text-critico"><Trash2 size={17} /></button>}
                       </div>
                       <fieldset disabled={!editable} className="mt-2 grid grid-cols-2 gap-2 @xl:grid-cols-4">
+                        {eqsSel.length > 1 && (
+                          <label className="col-span-2 text-xs text-tinta-2 @xl:col-span-4">Equipo
+                            <select value={l.equipoId ?? ""} onChange={(e) => {
+                              const eq = eqsSel.find((x) => x.id === e.target.value);
+                              const tam = eq && it.escala === "tamano" ? tamanoSugerido(`${eq.nombre} ${eq.datosPlaca?.potencia ?? ""}`) : undefined;
+                              setLinea(L.idx, { equipoId: e.target.value || undefined, ...(tam ? { tam } : {}) });
+                            }} className={cx(claseCampo, "min-h-10 text-sm")}>
+                              <option value="">General (todos los equipos)</option>
+                              {eqsSel.map((x) => <option key={x.id} value={x.id}>{x.nombre}</option>)}
+                            </select>
+                          </label>
+                        )}
                         <label className="text-xs text-tinta-2">Cantidad ({it.unidad === "m" ? "metros" : it.unidad === "u" ? "unidades" : it.unidad === "equipo" ? "equipos" : it.unidad})
                           <input type="number" min={0} step={1} value={l.cant} onChange={(e) => setLinea(L.idx, { cant: Math.max(0, +e.target.value || 0) })} className={cx(claseCampo, "min-h-10 tabular")} />
                         </label>
@@ -444,7 +507,7 @@ function Resumen({ q, R, verCostos, puedeDescuento, onDescuento, iva }: { q: Bor
   );
 }
 
-/** Convierte una cotización aprobada en mantenimiento + tareas para la cuadrilla. */
+/** Convierte una cotización aprobada en mantenimientos (uno por equipo) + tareas para la cuadrilla. */
 function Programar({ q, R, base }: { q: Cotizacion; R: Resultado; base: Base }) {
   const s = useStore();
   const aviso = useAviso();
@@ -452,13 +515,17 @@ function Programar({ q, R, base }: { q: Cotizacion; R: Resultado; base: Base }) 
   const yo = useUsuarioCot(base);
   const [fecha, setFecha] = useState(q.fechaTrabajo || "");
   const [hora, setHora] = useState("08:30");
-  const trabajo = q.trabajoId ? s.trabajos.find((t) => t.id === q.trabajoId) : undefined;
   const ruta = (id: string) => `/${base}/mantenimientos/${id}`;
-  if (trabajo) {
+  const creados = trabajosCot(q).map((id) => s.trabajos.find((t) => t.id === id)).filter((t) => !!t);
+  if (creados.length) {
     return (
       <section className="rounded-2xl bg-ok-bg p-4 text-sm">
-        <p className="font-semibold text-ok">Programada como mantenimiento Nº {trabajo.numero}</p>
-        <Link href={ruta(trabajo.id)} className="mt-1 inline-block font-semibold text-marca-700 hover:underline">Ver mantenimiento →</Link>
+        <p className="font-semibold text-ok">Programada como {creados.length === 1 ? "mantenimiento" : `${creados.length} mantenimientos`}</p>
+        <ul className="mt-1 space-y-1">
+          {creados.map((t) => (
+            <li key={t.id}><Link href={ruta(t.id)} className="font-semibold text-marca-700 hover:underline">Nº {t.numero} · {s.equipos.find((e) => e.id === t.equipoId)?.nombre} →</Link></li>
+          ))}
+        </ul>
       </section>
     );
   }
@@ -466,51 +533,79 @@ function Programar({ q, R, base }: { q: Cotizacion; R: Resultado; base: Base }) 
   const puedeProgramar = puede(yo.rol, "programar_tareas") || yo.rol === "tecnico";
   const asignados = Object.values(q.asig).filter(Boolean).map((id) => perfil(id)).filter((p) => p.rol === "tecnico");
   const responsable = [...asignados].sort((a, b) => ORDEN.indexOf(b.nivel ?? "T1") - ORDEN.indexOf(a.nivel ?? "T1"))[0];
-  const listo = !!q.equipoId && !!fecha && !!responsable;
+  const eqIds = equiposCot(q);
+  const lineas = R.lines.filter((L) => L.it);
+  // Horas de trabajo por equipo; las partidas generales se reparten en partes iguales
+  const general = lineas.filter((L) => !eqIds.includes(q.lineas[L.idx].equipoId ?? "")).reduce((a, L) => a + L.h, 0);
+  const grupos = eqIds.map((eid) => {
+    const propias = lineas.filter((L) => q.lineas[L.idx].equipoId === eid);
+    return { eid, lineas: propias.length ? propias : lineas.filter((L) => !q.lineas[L.idx].equipoId), horas: propias.reduce((a, L) => a + L.h, 0) + general / eqIds.length };
+  }).filter((g) => g.horas > 0 || eqIds.length === 1);
+  const listo = grupos.length > 0 && !!fecha && !!responsable;
 
   const programar = () => {
-    const lineas = R.lines.filter((L) => L.it);
-    const tipo: TipoTrabajo = lineas.some((L) => L.it!.cod === "GEN-03") ? "arranque" : lineas.every((L) => L.it!.fam === "inst") ? "instalacion" : lineas.some((L) => L.it!.tipo === "Correctivo") ? "revision" : "mantenimiento";
-    const titulo = `${lineas[0].it!.act}${lineas.length > 1 ? ` y ${lineas.length - 1} trabajo(s) más` : ""} · ${q.numero}`;
-    const trabajoId = s.agregarTrabajo({ equipoId: q.equipoId!, titulo, tipo, lugar: "en_cliente", estado: "abierto", asignadoId: responsable.id, fechaIngreso: s.ahora });
-    // Una tarea por día de trabajo, en días hábiles seguidos
+    const pendientes = grupos.map((g) => {
+      const ls = g.lineas.length ? g.lineas : lineas;
+      const tipo: TipoTrabajo = ls.some((L) => L.it!.cod === "GEN-03") ? "arranque" : ls.every((L) => L.it!.fam === "inst") ? "instalacion" : ls.some((L) => L.it!.tipo === "Correctivo") ? "revision" : "mantenimiento";
+      const titulo = `${ls[0].it!.act}${ls.length > 1 ? ` y ${ls.length - 1} trabajo(s) más` : ""} · ${q.numero}`;
+      const trabajoId = s.agregarTrabajo({ equipoId: g.eid, titulo, tipo, lugar: "en_cliente", estado: "abierto", asignadoId: responsable.id, fechaIngreso: s.ahora });
+      return { ...g, tipo, titulo, trabajoId, restante: Math.max(g.horas, 0.5) };
+    });
+    // Los equipos se atienden uno tras otro, en jornadas de días hábiles seguidos:
+    // cada tramo de un equipo dentro de un día es una tarea de su mantenimiento.
     const d = new Date(`${fecha}T00:00:00`);
-    let restante = R.HT;
-    for (let dia = 0; dia < Math.max(1, R.DT); dia++) {
-      while (d.getDay() === 0 || d.getDay() === 6) d.setDate(d.getDate() + 1);
-      const iso = toLocalIso(d).slice(0, 10);
-      const horas = Math.min(s.configCot.params.JORNADA, Math.max(1, restante));
-      const ini = new Date(`${iso}T${hora}:00`);
-      const fin = new Date(ini);
-      fin.setMinutes(fin.getMinutes() + Math.round(horas * 60));
-      s.agregarVisita({
-        trabajoId,
-        tecnicoId: responsable.id,
-        descripcion: R.DT > 1 ? `${titulo} — día ${dia + 1} de ${R.DT}` : titulo,
-        lugar: "en_cliente",
-        programadaInicio: toLocalIso(ini),
-        programadaFin: toLocalIso(fin),
-        estado: "programada",
-        autoEmpresa: true,
-        acompanantes: asignados.filter((t) => t.id !== responsable.id).map((t) => t.id),
-        checklist: Object.fromEntries(CHECKLISTS[tipo].map((k) => [k, false])),
-        fotos: [],
-        programadaPor: yo.id,
-        vistaPorTecnico: yo.id === responsable.id,
-      });
-      restante -= horas;
-      d.setDate(d.getDate() + 1);
+    const J = s.configCot.params.JORNADA;
+    let usado = 0;
+    let dia = 0;
+    for (const g of pendientes) {
+      while (g.restante > 1e-6) {
+        while (d.getDay() === 0 || d.getDay() === 6) d.setDate(d.getDate() + 1);
+        const horas = Math.min(J - usado, g.restante);
+        const iso = toLocalIso(d).slice(0, 10);
+        const ini = new Date(`${iso}T${hora}:00`);
+        ini.setMinutes(ini.getMinutes() + Math.round(usado * 60));
+        const fin = new Date(ini);
+        fin.setMinutes(fin.getMinutes() + Math.round(horas * 60));
+        s.agregarVisita({
+          trabajoId: g.trabajoId,
+          tecnicoId: responsable.id,
+          descripcion: R.DT > 1 ? `${g.titulo} — día ${dia + 1} de ${R.DT}` : g.titulo,
+          lugar: "en_cliente",
+          programadaInicio: toLocalIso(ini),
+          programadaFin: toLocalIso(fin),
+          estado: "programada",
+          autoEmpresa: true,
+          acompanantes: asignados.filter((t) => t.id !== responsable.id).map((t) => t.id),
+          checklist: Object.fromEntries(CHECKLISTS[g.tipo].map((k) => [k, false])),
+          fotos: [],
+          programadaPor: yo.id,
+          vistaPorTecnico: yo.id === responsable.id,
+        });
+        g.restante -= horas;
+        usado += horas;
+        if (usado >= J - 1e-6) { usado = 0; dia++; d.setDate(d.getDate() + 1); }
+      }
     }
-    s.guardarCotizacion({ ...q, trabajoId });
-    aviso(`Trabajo programado · ${R.DT > 1 ? `${R.DT} días desde` : ""} ${fecha} ${hora}`);
-    router.push(ruta(trabajoId));
+    const ids = pendientes.map((g) => g.trabajoId);
+    s.guardarCotizacion({ ...q, trabajoIds: ids, trabajoId: undefined });
+    aviso(ids.length > 1 ? `${ids.length} mantenimientos programados desde ${fecha} ${hora}` : `Trabajo programado · ${R.DT > 1 ? `${R.DT} días desde` : ""} ${fecha} ${hora}`);
+    if (ids.length === 1) router.push(ruta(ids[0]));
   };
 
   if (!puedeProgramar) return null;
   return (
     <section className="rounded-2xl border-2 border-ok/40 bg-superficie p-4">
       <h2 className="flex items-center gap-2 font-semibold"><CalendarPlus size={18} className="text-ok" /> Cotización aprobada · programar el trabajo</h2>
-      <p className="mt-1 text-sm text-tinta-2">Se crea el mantenimiento con {Math.max(1, R.DT)} tarea(s) para la cuadrilla asignada.</p>
+      <p className="mt-1 text-sm text-tinta-2">
+        {grupos.length > 1
+          ? `Se crea un mantenimiento por cada equipo (${grupos.length}), con sus tareas una tras otra durante ${Math.max(1, R.DT)} día(s).`
+          : `Se crea el mantenimiento con ${Math.max(1, R.DT)} tarea(s) para la cuadrilla asignada.`}
+      </p>
+      {grupos.length > 1 && (
+        <ul className="mt-2 space-y-1 text-sm">
+          {grupos.map((g) => <li key={g.eid} className="flex justify-between gap-3 rounded-lg bg-fondo px-3 py-1.5"><span className="min-w-0 truncate">{s.equipos.find((e) => e.id === g.eid)?.nombre}</span><span className="shrink-0 tabular">{hrs(g.horas)}</span></li>)}
+        </ul>
+      )}
       <div className="mt-3 grid grid-cols-1 gap-3 @xl:grid-cols-3">
         <label className="text-sm"><span className="text-tinta-2">Fecha de inicio</span><input type="date" value={fecha} onChange={(e) => setFecha(e.target.value)} className={claseCampo} /></label>
         <label className="text-sm"><span className="text-tinta-2">Hora de llegada</span><input type="time" value={hora} onChange={(e) => setHora(e.target.value)} className={claseCampo} /></label>
@@ -519,9 +614,9 @@ function Programar({ q, R, base }: { q: Cotizacion; R: Resultado; base: Base }) 
           <p className="mt-1 flex min-h-12 items-center gap-2">{responsable ? <><Avatar nombre={responsable.nombre} size={28} /> {responsable.nombre}</> : <span className="text-critico">Asigna la cuadrilla primero</span>}</p>
         </div>
       </div>
-      {!q.equipoId && <p className="mt-2 rounded-lg bg-aviso-bg px-3 py-2 text-sm text-aviso">Elige el equipo del cliente{!q.clienteId && " (el cliente debe estar registrado en la app)"} y guarda la cotización para poder programar.</p>}
+      {!eqIds.length && <p className="mt-2 rounded-lg bg-aviso-bg px-3 py-2 text-sm text-aviso">Elige al menos un equipo del cliente{!q.clienteId && " (el cliente debe estar registrado en la app)"} y guarda la cotización para poder programar.</p>}
       <button type="button" disabled={!listo} onClick={programar} className="mt-3 inline-flex min-h-12 items-center gap-2 rounded-xl bg-ok px-5 font-semibold text-white disabled:opacity-50">
-        <IconoTipo tipo="mantenimiento" size={24} /> Programar trabajo
+        <IconoTipo tipo="mantenimiento" size={24} /> Programar {grupos.length > 1 ? `${grupos.length} mantenimientos` : "trabajo"}
       </button>
     </section>
   );

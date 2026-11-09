@@ -7,6 +7,7 @@ import { useStore } from "@/lib/store";
 import { calcular } from "@/lib/cotizador/calculo";
 import { kmDesdeBase } from "@/lib/cotizador/config";
 import { usd } from "@/components/cotizador/editor";
+import { equiposCot } from "@/lib/cotizador/tipos";
 
 const hrs = (n: number) => (Number(n) || 0).toLocaleString("es-EC", { maximumFractionDigits: 2 }) + " h";
 
@@ -21,6 +22,8 @@ export default function DocumentoCotizacion({ params }: { params: Promise<{ id: 
   const P = cfg.params;
   const R = calcular({ ...q, kmOverride: kmDesdeBase(q.base, q.ciudad, cfg) }, cfg);
   const lineas = R.lines.filter((L) => L.it);
+  const eqs = equiposCot(q).map((eid) => s.equipos.find((e) => e.id === eid)).filter((e) => !!e);
+  const nombreEq = (eid?: string) => (eqs.length > 1 ? eqs.find((e) => e.id === eid)?.nombre : undefined);
   const altura = lineas.some((L) => L.it!.escala === "altura" && (L.escala as { cert?: boolean }).cert);
 
   return (
@@ -50,6 +53,14 @@ export default function DocumentoCotizacion({ params }: { params: Promise<{ id: 
           <div><b>Fecha tentativa:</b> {q.fechaTrabajo || "Por coordinar"}</div>
           <div><b>Duración estimada:</b> {R.DT} día(s) de trabajo</div>
         </dl>
+        {eqs.length > 0 && (
+          <div className="mt-3">
+            <b>{eqs.length === 1 ? "Equipo:" : `Equipos (${eqs.length}):`}</b>
+            <ul className="mt-1 grid grid-cols-1 gap-x-6 sm:grid-cols-2">
+              {eqs.map((e) => <li key={e.id}>• {e.nombre} — {e.marca} {e.modelo}{e.serie ? ` · Serie ${e.serie}` : ""}</li>)}
+            </ul>
+          </div>
+        )}
         <div className="mt-4 overflow-x-auto">
           <table className="w-full min-w-[560px] border-collapse">
             <thead>
@@ -61,7 +72,7 @@ export default function DocumentoCotizacion({ params }: { params: Promise<{ id: 
               {lineas.map((L) => (
                 <tr key={L.idx}>
                   <td className="font-mono whitespace-nowrap">{L.it!.cod}</td>
-                  <td>{L.it!.act}<div className="text-[11.5px] text-[#5A6577]">{L.it!.alcance}{L.it!.escala === "altura" ? ` · Altura: ${L.escala.n}` : L.it!.escala === "tamano" ? ` · Tamaño: ${L.escala.n}` : ""}{L.hor.rec ? ` · ${L.hor.n}` : ""}</div></td>
+                  <td>{L.it!.act}{nombreEq(q.lineas[L.idx].equipoId) && <span className="font-semibold"> — {nombreEq(q.lineas[L.idx].equipoId)}</span>}<div className="text-[11.5px] text-[#5A6577]">{L.it!.alcance}{L.it!.escala === "altura" ? ` · Altura: ${L.escala.n}` : L.it!.escala === "tamano" ? ` · Tamaño: ${L.escala.n}` : ""}{L.hor.rec ? ` · ${L.hor.n}` : ""}</div></td>
                   <td className="text-right whitespace-nowrap tabular">{L.cant} {L.it!.unidad}</td>
                   <td className="text-right tabular">{hrs(L.h)}</td>
                   <td className="text-right tabular">{usd(L.mo)}</td>

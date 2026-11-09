@@ -32,13 +32,15 @@ export interface ConfigCot {
 export type EstadoCot = "Borrador" | "Enviada" | "Aprobada" | "Rechazada" | "Ejecutada";
 export const ESTADOS_COT: EstadoCot[] = ["Borrador", "Enviada", "Aprobada", "Rechazada", "Ejecutada"];
 
-export interface LineaCot { cod: string; cant: number; tam: string; alt: string; hor: string }
+export interface LineaCot { cod: string; cant: number; tam: string; alt: string; hor: string; equipoId?: string }
 
 export interface Cotizacion {
   id: string;
   numero: string; // COT-0001
   fecha: string;
   clienteId?: string;
+  equipoIds?: string[]; // equipos del cliente incluidos en la cotización
+  /** @deprecated cotizaciones antiguas con un solo equipo; usar equiposCot() */
   equipoId?: string;
   solicitudId?: string;
   cliente: string;
@@ -59,5 +61,12 @@ export interface Cotizacion {
   creadoPor: string;
   creadoEn: string;
   actualizado: string;
-  trabajoId?: string; // mantenimiento programado a partir de la cotización
+  trabajoIds?: string[]; // mantenimientos programados (uno por equipo)
+  /** @deprecated usar trabajosCot() */
+  trabajoId?: string;
 }
+
+/** Equipos de una cotización (compatible con las que tenían un solo equipo). */
+export const equiposCot = (q: Pick<Cotizacion, "equipoIds" | "equipoId">): string[] => q.equipoIds ?? (q.equipoId ? [q.equipoId] : []);
+/** Mantenimientos creados desde una cotización. */
+export const trabajosCot = (q: Pick<Cotizacion, "trabajoIds" | "trabajoId">): string[] => q.trabajoIds ?? (q.trabajoId ? [q.trabajoId] : []);
