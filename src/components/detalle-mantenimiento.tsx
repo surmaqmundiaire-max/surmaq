@@ -2,9 +2,9 @@
 
 import Link from "next/link";
 import { useState } from "react";
-import { CalendarPlus, Handshake, UserCheck, Camera, Car, Check, ChevronRight, Clock3, MapPin, PenLine, Users } from "lucide-react";
+import { CalendarPlus, Handshake, QrCode, UserCheck, Camera, Car, Check, ChevronRight, Clock3, MapPin, PenLine, Users } from "lucide-react";
 import { useStore } from "@/lib/store";
-import { avanceTrabajo, contexto, horasVisita, perfil, ROL_LABEL, UMBRAL_DISTANCIA_M } from "@/lib/selectors";
+import { avanceTrabajo, contexto, horasVisita, pedidoPor, perfil, ROL_LABEL, UMBRAL_DISTANCIA_M } from "@/lib/selectors";
 import { duracion, fechaCorta, fechaLarga, hora, metros } from "@/lib/format";
 import { Avatar, Badge, Barra, EstadoTrabajoBadge, EstadoVisitaBadge, Vacio, cx } from "./ui";
 import { Migas, rutas, type Base } from "./migas";
@@ -52,7 +52,7 @@ export function DetalleMantenimiento({ id, base }: { id: string; base: Base }) {
         const sol = s.solicitudes.find((x) => x.id === t.solicitudId);
         return sol ? (
           <p className="flex flex-wrap items-center gap-2 rounded-xl bg-t-arr-bg px-4 py-2.5 text-sm text-t-arr-tx">
-            <Handshake size={16} /> Pedido por <strong>{perfil(sol.vendedorId).nombre}</strong> (vendedor) · Solicitud Nº {sol.numero}
+            {sol.origen === "cliente_qr" ? <QrCode size={16} /> : <Handshake size={16} />} Pedido por <strong>{pedidoPor(sol)}</strong> · Solicitud Nº {sol.numero}
             {base === "admin" && <> · USD {((sol.montoProducto ?? 0) + (sol.montoManoObra ?? 0)).toLocaleString("es-EC")} · <Link href={`/admin/solicitudes/${sol.id}`} className="font-semibold underline underline-offset-2">ver solicitud</Link></>}
           </p>
         ) : null;

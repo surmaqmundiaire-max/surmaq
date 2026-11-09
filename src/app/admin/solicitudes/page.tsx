@@ -4,7 +4,7 @@ import Link from "next/link";
 import { useState } from "react";
 import { ChevronRight, Plus } from "lucide-react";
 import { useStore } from "@/lib/store";
-import { cliente as getCliente, equipo as getEquipo, perfil, puede } from "@/lib/selectors";
+import { cliente as getCliente, equipo as getEquipo, pedidoPor, perfil, puede } from "@/lib/selectors";
 import { fechaCorta } from "@/lib/format";
 import type { EstadoSolicitud } from "@/lib/types";
 import { Badge, Vacio, cx } from "@/components/ui";
@@ -28,7 +28,7 @@ export default function Solicitudes() {
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div>
           <h1 className="text-2xl font-bold">{yo.rol === "vendedor" ? "Mis solicitudes de visita" : "Solicitudes de visita técnica"}</h1>
-          <p className="text-sm text-tinta-2">{aprueba ? "Revisa lo que piden los vendedores: aprueba y programa, cambia la hora o rechaza." : "Pide una visita técnica para tu cliente. Mantenimiento la revisa y la programa."}</p>
+          <p className="text-sm text-tinta-2">{aprueba ? "Revisa lo que piden vendedores y clientes (por el QR del equipo): aprueba y programa, cambia la hora o rechaza." : "Pide una visita técnica para tu cliente. Mantenimiento la revisa y la programa."}</p>
         </div>
         <Link href="/admin/solicitudes/nueva" className="inline-flex min-h-11 items-center gap-1.5 rounded-xl bg-marca-800 px-4 text-sm font-semibold text-white hover:bg-marca-900"><Plus size={17} /> Nueva solicitud</Link>
       </div>
@@ -55,13 +55,13 @@ export default function Solicitudes() {
                 <Link href={`/admin/solicitudes/${x.id}`} className="flex items-center gap-3 px-4 py-3 hover:bg-fondo">
                   <IconoTipo tipo={x.tipo} size={40} />
                   <span className="min-w-0 flex-1">
-                    <span className="flex flex-wrap items-center gap-2 font-semibold">{c.razonSocial} <EstadoSolicitudBadge estado={x.estado} />{x.cambioHora && x.estado === "programada" && <Badge tono="info">Hora cambiada</Badge>}</span>
+                    <span className="flex flex-wrap items-center gap-2 font-semibold">{c.razonSocial} <EstadoSolicitudBadge estado={x.estado} />{x.cambioHora && x.estado === "programada" && <Badge tono="info">Hora cambiada</Badge>}{x.origen === "cliente_qr" && <Badge tono="info">Cliente vía QR</Badge>}{x.urgente && x.estado === "ingresada" && <Badge tono="critico">Urgente</Badge>}</span>
                     <span className="block truncate text-sm text-tinta-2">Nº {x.numero} · {e?.nombre} · {x.descripcion}</span>
                     <span className="block text-xs text-tinta-3">
                       {x.estado === "programada" && visita
                         ? `Programada ${fechaCorta(visita.programadaInicio)} ${visita.programadaInicio.slice(11, 16)} · ${perfil(visita.tecnicoId).nombre}`
                         : `Requerida ${fechaCorta(x.fechaRequerida)} ${x.horaRequerida}`}
-                      {yo.rol !== "vendedor" && ` · pedida por ${perfil(x.vendedorId).nombre}`} · Mant. {x.dpto}
+                      {yo.rol !== "vendedor" && ` · pedida por ${pedidoPor(x)}`} · Mant. {x.dpto}
                     </span>
                   </span>
                   <ChevronRight size={18} className="shrink-0 text-tinta-3" />

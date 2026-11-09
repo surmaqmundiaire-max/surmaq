@@ -4,7 +4,8 @@ import Link from "next/link";
 import { useEffect, useMemo, useState } from "react";
 import { Ban, Check, ChevronLeft, ChevronRight, CircleCheck } from "lucide-react";
 import { useStore } from "@/lib/store";
-import { ocupacion, tecnicos, type Ocupacion } from "@/lib/selectors";
+import { choques as calcularChoques, ocupacion, tecnicos, ubicacionTecnico, type Ocupacion } from "@/lib/selectors";
+import { horasViaje, textoHoras } from "@/lib/geografia";
 import { diaSemana, fechaCorta, hora, horasEntre, toLocalIso } from "@/lib/format";
 import { Avatar, cx } from "./ui";
 
@@ -16,14 +17,30 @@ const pct = (iso: string) => {
 };
 
 /** Barra del día 7h–19h con lo ocupado (y, opcional, el horario que se quiere pedir). */
-function BarraDia({ dia, ocupado, pedido }: { dia: string; ocupado: Ocupacion[]; pedido?: { desde: string; hasta: string; choca: boolean } }) {
+const RAYADO = "repeating-linear-gradient(135deg, rgba(27,77,128,0.45) 0 4px, rgba(27,77,128,0.12) 4px 8px)";
+const horaMas = (iso: string, h: number) => { const d = new Date(iso); d.setMinutes(d.getMinutes() + Math.round(h * 60)); return toLocalIso(d); };
+
+function BarraDia({ dia, ocupado, pedido }: { dia: string; ocupado: Ocupacion[]; pedido?: { desde: string; hasta: string; choca: boolean; viaje?: number } }) {
+  const seg = (desde: string, hasta: string) => {
+    const a = desde.slice(0, 10) < dia ? 0 : pct(desde);
+    const b = hasta.slice(0, 10) > dia ? 100 : pct(hasta);
+    return { left: `${a}%`, width: `${Math.max(b - a, 0.8)}%` };
+  };
   return (
     <div className="relative h-6 w-full rounded-md bg-ok-bg" aria-hidden>
-      {ocupado.map((o, i) => {
-        const a = o.desde.slice(0, 10) < dia ? 0 : pct(o.desde);
-        const b = o.hasta.slice(0, 10) > dia ? 100 : pct(o.hasta);
-        return <span key={i} className={cx("absolute top-0 bottom-0 rounded-[4px]", o.tipo === "permiso" ? "bg-tinta-3/50" : "bg-marca-700")} style={{ left: `${a}%`, width: `${Math.max(b - a, 1)}%` }} />;
-      })}
+      {ocupado.map((o, i) => (
+        <span key={i}>
+          {!!o.viajeAntes && <span className="absolute top-1 bottom-1 rounded-[3px]" style={{ ...seg(horaMas(o.desde, -o.viajeAntes), o.desde), background: RAYADO }} />}
+          {!!o.viajeDespues && <span className="absolute top-1 bottom-1 rounded-[3px]" style={{ ...seg(o.hasta, horaMas(o.hasta, o.viajeDespues)), background: RAYADO }} />}
+          <span className={cx("absolute top-0 bottom-0 rounded-[4px]", o.tipo === "permiso" ? "bg-tinta-3/50" : "bg-marca-700")} style={seg(o.desde, o.hasta)} />
+        </span>
+      ))}
+      {pedido && !!pedido.viaje && (
+        <>
+          <span className="absolute top-1.5 bottom-1.5 rounded-[3px] opacity-70" style={{ ...seg(horaMas(pedido.desde, -pedido.viaje), pedido.desde), background: RAYADO }} />
+          <span className="absolute top-1.5 bottom-1.5 rounded-[3px] opacity-70" style={{ ...seg(pedido.hasta, horaMas(pedido.hasta, pedido.viaje)), background: RAYADO }} />
+        </>
+      )}
       {pedido && (
         <span className={cx("absolute -top-1 -bottom-1 rounded-[5px] border-2 border-dashed", pedido.choca ? "border-critico bg-critico/15" : "border-ok bg-ok/15")} style={{ left: `${pct(pedido.desde)}%`, width: `${Math.max(pct(pedido.hasta) - pct(pedido.desde), 1)}%` }} />
       )}
@@ -46,7 +63,9 @@ export function SelectorDisponibilidad({
   onChange,
   permitirSinPreferencia = true,
   ignorarTrabajo,
+  destino,
 }: {
+  destino?: { ciudad: string; clienteId: string };
   ciudad: string;
   fecha: string;
   horaIni: string;
@@ -67,12 +86,15 @@ export function SelectorDisponibilidad({
         .filter((t) => t.ciudad === ciudad)
         .map((t) => {
           const delDia = ocupacion(t.id, `${fecha}T00:00:00`, `${fecha}T23:59:59`, s.visitas, s.trabajos);
-          const choques = ocupacion(t.id, desde, hasta, s.visitas.filter((v) => v.trabajoId !== ignorarTrabajo), s.trabajos);
+          const dest = destino ?? { ciudad: t.ciudad, clienteId: "" };
+          const choques = calcularChoques(t.id, desde, hasta, dest, s.visitas, s.trabajos, ignorarTrabajo);
+          const estara = ubicacionTecnico(t.id, desde, s.visitas, s.trabajos);
+          const viaje = horasViaje(t.ciudad, dest.ciudad);
           const horasOcupadas = delDia.filter((o) => o.tipo === "tarea").reduce((a, o) => a + horasEntre(o.desde, o.hasta), 0);
-          return { t, delDia, choques, horasOcupadas };
+          return { t, delDia, choques, horasOcupadas, estara, viaje };
         })
         .sort((a, b) => a.choques.length - b.choques.length || a.horasOcupadas - b.horasOcupadas),
-    [ciudad, fecha, desde, hasta, s.visitas, s.trabajos, ignorarTrabajo],
+    [ciudad, fecha, desde, hasta, s.visitas, s.trabajos, ignorarTrabajo, destino],
   );
   const elegido = lista.find((x) => x.t.id === valor);
 
@@ -84,7 +106,8 @@ export function SelectorDisponibilidad({
   return (
     <div>
       <p className="text-sm text-tinta-2">
-        Disponibilidad el <strong className="text-tinta">{diaSemana(fecha)} {fechaCorta(fecha)}</strong> de <strong className="text-tinta">{horaIni}</strong> a <strong className="text-tinta">{hasta.slice(11, 16)}</strong> · {ciudad}
+        Disponibilidad el <strong className="text-tinta">{diaSemana(fecha)} {fechaCorta(fecha)}</strong> de <strong className="text-tinta">{horaIni}</strong> a <strong className="text-tinta">{hasta.slice(11, 16)}</strong>
+        {destino ? <> en <strong className="text-tinta">{destino.ciudad}</strong></> : null} · técnicos de {ciudad}. Se cuenta el tiempo de viaje entre trabajos.
       </p>
       <ul className="mt-2 space-y-2" role="radiogroup" aria-label="Técnico">
         {permitirSinPreferencia && (
@@ -95,7 +118,7 @@ export function SelectorDisponibilidad({
             </button>
           </li>
         )}
-        {lista.map(({ t, delDia, choques, horasOcupadas }) => {
+        {lista.map(({ t, delDia, choques, horasOcupadas, estara, viaje }) => {
           const ocupado = choques.length > 0;
           const sel = valor === t.id;
           return (
@@ -118,13 +141,17 @@ export function SelectorDisponibilidad({
                     <span className={cx("block font-semibold", ocupado && "text-tinta-2")}>{t.nombre}</span>
                     <span className={cx("flex items-center gap-1 text-sm", ocupado ? "text-critico" : "text-ok")}>
                       {ocupado ? <Ban size={14} /> : <CircleCheck size={14} />}
-                      {ocupado ? `Ocupado: ${choques.map(describir).join(" · ")}` : `Libre en ese horario${horasOcupadas ? ` · ${horasOcupadas.toFixed(0)} h ocupadas ese día` : " · día libre"}`}
+                      {ocupado ? `No disponible: ${choques.map((c) => c.detalle).join(" · ")}` : `Libre en ese horario${horasOcupadas ? ` · ${horasOcupadas.toFixed(0)} h ocupadas ese día` : " · día libre"}`}
+                    </span>
+                    <span className="block text-xs text-tinta-3">
+                      {estara !== t.ciudad ? `Ese día estará en ${estara}` : `Base: ${t.ciudad}`}
+                      {viaje > 0 ? ` · viaje a ${destino?.ciudad}: ${textoHoras(viaje)} ida y ${textoHoras(viaje)} regreso` : ""}
                     </span>
                   </span>
                   {sel && <Check size={18} className="text-marca-800" />}
                 </span>
                 <span className="mt-2 block">
-                  <BarraDia dia={fecha} ocupado={delDia} pedido={{ desde, hasta, choca: ocupado }} />
+                  <BarraDia dia={fecha} ocupado={delDia} pedido={{ desde, hasta, choca: ocupado, viaje }} />
                 </span>
               </button>
             </li>
@@ -134,6 +161,7 @@ export function SelectorDisponibilidad({
       <p className="mt-2 flex flex-wrap gap-x-4 gap-y-1 text-xs text-tinta-2">
         <span className="inline-flex items-center gap-1"><span className="h-2.5 w-4 rounded bg-ok-bg ring-1 ring-ok/30" /> Libre</span>
         <span className="inline-flex items-center gap-1"><span className="h-2.5 w-4 rounded bg-marca-700" /> Con tarea</span>
+        <span className="inline-flex items-center gap-1"><span className="h-2.5 w-4 rounded" style={{ background: RAYADO }} /> Viaje</span>
         <span className="inline-flex items-center gap-1"><span className="h-2.5 w-4 rounded bg-tinta-3/50" /> Permiso / vacaciones</span>
         <span className="inline-flex items-center gap-1"><span className="h-2.5 w-4 rounded border-2 border-dashed border-ok" /> Horario pedido</span>
       </p>
@@ -188,14 +216,15 @@ export function SemanaDisponibilidad({ ciudad, enlace }: { ciudad?: string; enla
                 {dias.map((d) => {
                   const oc = ocupacion(t.id, `${d}T00:00:00`, `${d}T23:59:59`, s.visitas, s.trabajos);
                   const permiso = oc.find((o) => o.tipo === "permiso");
-                  const h = oc.filter((o) => o.tipo === "tarea").reduce((a, o) => a + horasEntre(o.desde, o.hasta), 0);
+                  const h = oc.filter((o) => o.tipo === "tarea").reduce((a, o) => a + horasEntre(o.desde, o.hasta) + (o.viajeAntes ?? 0) + (o.viajeDespues ?? 0), 0);
+                  const fuera = oc.find((o) => o.ciudad && o.ciudad !== t.ciudad)?.ciudad;
                   const pasado = d < hoy;
                   const titulo = oc.length ? oc.map(describir).join("\n") : "Libre todo el día";
                   const contenido = (
                     <>
                       <BarraDia dia={d} ocupado={oc} />
                       <span className={cx("mt-1 block text-xs", permiso ? "text-tinta-2" : h >= 8 ? "text-critico" : h ? "text-tinta-2" : "text-ok")}>
-                        {permiso ? permiso.detalle : h >= 8 ? "Lleno" : h ? `${h.toFixed(0)} h ocupadas` : "Libre"}
+                        {permiso ? permiso.detalle : h >= 8 ? `Lleno${fuera ? ` · en ${fuera}` : ""}` : h ? `${h.toFixed(0)} h ocupadas${fuera ? ` · en ${fuera}` : ""}` : "Libre"}
                       </span>
                     </>
                   );

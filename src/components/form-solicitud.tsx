@@ -126,7 +126,7 @@ export function FormSolicitud({ clienteInicial, equipoInicial, tecnicoInicial, f
       <section>
         <h2 className="font-semibold">5. Técnico <span className="font-normal text-tinta-3">(opcional)</span></h2>
         <p className="mb-3 text-sm text-tinta-2">Solo puedes elegir técnicos libres en ese horario. Mira la semana completa en <Link href="/admin/calendario?vista=disponibilidad" className="font-semibold text-marca-700 underline-offset-2 hover:underline">Calendario › Disponibilidad</Link>.</p>
-        <SelectorDisponibilidad ciudad={dpto} fecha={fecha} horaIni={hora} horas={Number(dur)} valor={tecnicoPref} onChange={setTecnicoPref} />
+        <SelectorDisponibilidad ciudad={dpto} destino={cliente ? { ciudad: cliente.ciudad, clienteId: cliente.id } : undefined} fecha={fecha} horaIni={hora} horas={Number(dur)} valor={tecnicoPref} onChange={setTecnicoPref} />
       </section>
 
       <section className="space-y-3">

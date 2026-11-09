@@ -14,6 +14,7 @@ import { Avatar, Badge, cx } from "./ui";
 import { Firma } from "./firma";
 import { claseCampo } from "./formularios";
 import { useAviso } from "./aviso";
+import { SeccionEtiqueta } from "./qr";
 import type { Base } from "./migas";
 
 /** Valores iniciales tomados del equipo, su placa y el cliente: el técnico no los vuelve a escribir. */
@@ -120,7 +121,7 @@ export function FormPuesta({ id, base }: { id: string; base: Base }) {
   const seccion = pl.secciones[paso - 1];
   const faltantes = pl.secciones.flatMap((sec) => sec.campos.filter((c) => c.obligatorio && !respondido(c, p.respuestas[c.id] as never)).map((c) => ({ sec, c })));
   const responder = (campo: string, v: unknown) => s.responderPuesta(id, campo, v);
-  const listoParaFinalizar = faltantes.length === 0 && p.tecnicos.length > 0 && !!p.responsableId && !!p.firmaTecnico;
+  const listoParaFinalizar = faltantes.length === 0 && p.tecnicos.length > 0 && !!p.responsableId && !!p.firmaTecnico && !!e.etiquetaPegadaEn;
 
   return (
     <div className="space-y-4">
@@ -335,6 +336,12 @@ function PasoCierre({ p, faltantes, irA }: { p: PuestaEnMarcha; faltantes: strin
         </div>
       </div>
 
+      <div>
+        <p className="text-sm font-medium text-tinta-2">Etiqueta QR del equipo <span className="text-critico">*</span></p>
+        <p className="mb-2 text-xs text-tinta-3">Imprímela y pégala en el equipo: el cliente la escanea para pedir servicio técnico.</p>
+        <SeccionEtiqueta equipo={e} compacta onPegada={(pg) => s.actualizarEquipo(e.id, pg ? { etiquetaPegadaEn: s.ahora, etiquetaPegadaPor: p.responsableId } : { etiquetaPegadaEn: undefined, etiquetaPegadaPor: undefined })} />
+      </div>
+
       <div className="grid gap-4 sm:grid-cols-2">
         <div>
           <p className="text-sm font-medium text-tinta-2">Firma del técnico {p.responsableId && `· ${perfil(p.responsableId).nombre}`}</p>
@@ -350,7 +357,7 @@ function PasoCierre({ p, faltantes, irA }: { p: PuestaEnMarcha; faltantes: strin
         </div>
       </div>
 
-      {(faltantes.length > 0 || !p.tecnicos.length || !p.firmaTecnico) && (
+      {(faltantes.length > 0 || !p.tecnicos.length || !p.firmaTecnico || !e.etiquetaPegadaEn) && (
         <div className="rounded-xl bg-aviso-bg p-4 text-sm text-aviso" role="status">
           <p className="font-semibold">Para finalizar falta:</p>
           <ul className="mt-1 list-disc pl-5">
@@ -358,6 +365,7 @@ function PasoCierre({ p, faltantes, irA }: { p: PuestaEnMarcha; faltantes: strin
             {faltantes.slice(0, 6).map((f) => <li key={f}><button type="button" className="text-left underline" onClick={() => irA(PLANTILLAS.find((x) => x.id === p.plantillaId)!.secciones.find((sec) => f.startsWith(sec.titulo))!.id)}>{f}</button></li>)}
             {faltantes.length > 6 && <li>y {faltantes.length - 6} más</li>}
             {!p.firmaTecnico && <li>La firma del técnico</li>}
+            {!e.etiquetaPegadaEn && <li>Pegar la etiqueta QR y marcarla</li>}
           </ul>
         </div>
       )}

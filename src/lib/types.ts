@@ -48,6 +48,8 @@ export interface Equipo {
   fotoUrl?: string; // foto del equipo
   fotoPlacaUrl?: string; // foto de la placa de datos
   datosPlaca?: DatosPlaca; // datos técnicos leídos de la placa
+  etiquetaPegadaEn?: string; // fecha en que se pegó la etiqueta QR en el equipo
+  etiquetaPegadaPor?: string;
   proximoMantenimiento?: string; // ISO date
   horasUso?: number;
   puestaEnMarcha?: { fecha: string; tecnicoId: string; presion: number; temperatura: number; voltaje: number };
@@ -151,6 +153,10 @@ export interface Solicitud {
   empresaFactura?: string;
   notificarA: string[];
   tecnicoPreferidoId?: string;
+  /** «vendedor» (por defecto) o «cliente_qr» si la pidió el cliente escaneando la etiqueta del equipo */
+  origen?: "vendedor" | "cliente_qr";
+  solicitante?: { nombre: string; telefono: string; correo?: string };
+  urgente?: boolean;
   estado: EstadoSolicitud;
   // al revisarla
   revisadaPor?: string;

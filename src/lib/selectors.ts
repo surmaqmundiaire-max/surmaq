@@ -1,6 +1,7 @@
 import * as mock from "./mock-data";
 import type { Pendiente, Trabajo, Visita } from "./types";
 import { diasEntre, horasEntre } from "./format";
+import { horasEntreLugares, horasViaje, textoHoras } from "./geografia";
 
 import type { Cliente, Equipo, Perfil, Rol } from "./types";
 
@@ -116,25 +117,45 @@ export function distanciaM(lat1: number, lng1: number, lat2: number, lng2: numbe
   return Math.round(2 * R * Math.asin(Math.sqrt(a)));
 }
 
-// ---------- Disponibilidad de técnicos ----------
+// ---------- Disponibilidad de técnicos (con tiempos de viaje) ----------
 export interface Ocupacion {
   tipo: "tarea" | "permiso";
   desde: string;
   hasta: string;
   detalle: string;
+  ciudad?: string;
+  /** horas de viaje desde la ciudad base del técnico (antes) y de regreso (después) */
+  viajeAntes?: number;
+  viajeDespues?: number;
 }
 
 const RAZON_PERMISO = { permiso: "Permiso", permiso_medico: "Permiso médico", vacaciones: "Vacaciones" } as const;
 
-/** Lo que ocupa a un técnico entre dos momentos: tareas (como responsable o acompañante) y permisos. */
+const sumarHoras = (iso: string, h: number) => {
+  const d = new Date(iso);
+  d.setMinutes(d.getMinutes() + Math.round(h * 60));
+  const p = (n: number) => String(n).padStart(2, "0");
+  return `${d.getFullYear()}-${p(d.getMonth() + 1)}-${p(d.getDate())}T${p(d.getHours())}:${p(d.getMinutes())}:00`;
+};
+
+/** Dónde se hace una tarea: la ciudad del cliente (o la base del técnico si es en oficina). */
+const lugarDe = (v: Visita, trabajos: Trabajo[], base: string) => {
+  const c = contexto(trabajos, v.trabajoId).cliente;
+  return v.lugar === "en_oficina" ? { ciudad: base, clienteId: "oficina", nombre: "Oficina / taller" } : { ciudad: c.ciudad, clienteId: c.id, nombre: c.razonSocial };
+};
+
+const tareasActivas = (tecnicoId: string, visitas: Visita[]) =>
+  visitas.filter((v) => v.estado !== "cancelada" && v.estado !== "finalizada" && (v.tecnicoId === tecnicoId || v.acompanantes.includes(tecnicoId)));
+
+/** Lo que ocupa a un técnico en una ventana de tiempo, incluido el viaje desde y hacia su ciudad base. */
 export function ocupacion(tecnicoId: string, desde: string, hasta: string, visitas: Visita[], trabajos: Trabajo[]): Ocupacion[] {
+  const base = perfil(tecnicoId).ciudad;
   const out: Ocupacion[] = [];
-  for (const v of visitas) {
-    if (v.estado === "cancelada" || v.estado === "finalizada") continue;
-    if (v.tecnicoId !== tecnicoId && !v.acompanantes.includes(tecnicoId)) continue;
-    const fin = v.estado === "en_curso" && v.programadaFin < desde ? desde : v.programadaFin;
-    if (v.programadaInicio < hasta && fin > desde) {
-      out.push({ tipo: "tarea", desde: v.programadaInicio, hasta: v.programadaFin, detalle: contexto(trabajos, v.trabajoId).cliente.razonSocial });
+  for (const v of tareasActivas(tecnicoId, visitas)) {
+    const l = lugarDe(v, trabajos, base);
+    const ida = horasViaje(base, l.ciudad);
+    if (sumarHoras(v.programadaInicio, -ida) < hasta && sumarHoras(v.programadaFin, ida) > desde) {
+      out.push({ tipo: "tarea", desde: v.programadaInicio, hasta: v.programadaFin, detalle: l.ciudad !== base ? `${l.nombre} (${l.ciudad})` : l.nombre, ciudad: l.ciudad, viajeAntes: ida, viajeDespues: ida });
     }
   }
   for (const p of mock.permisos) {
@@ -144,3 +165,55 @@ export function ocupacion(tecnicoId: string, desde: string, hasta: string, visit
   }
   return out.sort((a, b) => a.desde.localeCompare(b.desde));
 }
+
+/**
+ * Choques de un horario nuevo (en la ciudad y cliente de destino) con lo que ya tiene el técnico,
+ * contando el tiempo de viaje entre un trabajo y otro. Devuelve el motivo en palabras.
+ */
+export function choques(
+  tecnicoId: string,
+  desde: string,
+  hasta: string,
+  destino: { ciudad: string; clienteId: string },
+  visitas: Visita[],
+  trabajos: Trabajo[],
+  ignorarTrabajo?: string,
+): Ocupacion[] {
+  const base = perfil(tecnicoId).ciudad;
+  const out: Ocupacion[] = [];
+  for (const v of tareasActivas(tecnicoId, visitas)) {
+    if (v.trabajoId === ignorarTrabajo) continue;
+    const l = lugarDe(v, trabajos, base);
+    const viaje = horasEntreLugares(l.ciudad, l.clienteId, destino.ciudad, destino.clienteId);
+    const finConViaje = sumarHoras(v.programadaFin, viaje);
+    const inicioConViaje = sumarHoras(v.programadaInicio, -viaje);
+    if (inicioConViaje < hasta && finConViaje > desde) {
+      const lejos = l.ciudad !== destino.ciudad;
+      let detalle: string;
+      if (v.programadaInicio < hasta && v.programadaFin > desde) detalle = `${v.programadaInicio.slice(11, 16)}–${v.programadaFin.slice(11, 16)} en ${l.nombre}${lejos ? ` (${l.ciudad})` : ""}`;
+      else if (v.programadaFin <= desde) detalle = `${lejos ? `Vuelve de ${l.ciudad}` : `Sale de ${l.nombre}`} y queda libre a las ${finConViaje.slice(11, 16)} (${textoHoras(viaje)} de ${lejos ? "viaje" : "movilización"})`;
+      else detalle = `Tiene ${l.nombre}${lejos ? ` en ${l.ciudad}` : ""} a las ${v.programadaInicio.slice(11, 16)}: necesita ${textoHoras(viaje)} para llegar`;
+      out.push({ tipo: "tarea", desde: v.programadaInicio, hasta: v.programadaFin, detalle, ciudad: l.ciudad });
+    }
+  }
+  for (const p of mock.permisos) {
+    if (p.perfilId === tecnicoId && p.aprobado !== false && p.desde < hasta && p.hasta > desde) {
+      out.push({ tipo: "permiso", desde: p.desde, hasta: p.hasta, detalle: RAZON_PERMISO[p.razon] });
+    }
+  }
+  return out;
+}
+
+/** Dónde está o estará el técnico ese día (última tarea que empieza antes de la hora dada). */
+export function ubicacionTecnico(tecnicoId: string, momento: string, visitas: Visita[], trabajos: Trabajo[]) {
+  const base = perfil(tecnicoId).ciudad;
+  const dia = momento.slice(0, 10);
+  const previa = tareasActivas(tecnicoId, visitas)
+    .filter((v) => v.programadaInicio.startsWith(dia) && v.programadaInicio <= momento)
+    .sort((a, b) => b.programadaInicio.localeCompare(a.programadaInicio))[0];
+  return previa ? lugarDe(previa, trabajos, base).ciudad : base;
+}
+
+/** Quién pidió una solicitud, en palabras. */
+export const pedidoPor = (sol: { origen?: string; vendedorId: string; solicitante?: { nombre: string; telefono: string } }) =>
+  sol.origen === "cliente_qr" ? `el cliente (QR) · ${sol.solicitante?.nombre ?? ""} · ${sol.solicitante?.telefono ?? ""}` : `${perfil(sol.vendedorId).nombre} (vendedor)`;

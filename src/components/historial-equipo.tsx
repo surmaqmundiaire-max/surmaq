@@ -10,10 +10,11 @@ import { EstadoTrabajoBadge, Vacio, cx } from "./ui";
 import { LectorPlaca, SlotFoto, aplicarLectura } from "./fotos-equipo";
 import { Migas, rutas } from "./migas";
 import { SeccionPuestas } from "./puesta-en-marcha";
+import { SeccionEtiqueta } from "./qr";
 
 /** Ficha del equipo con su historial: compartida entre técnico y administración. */
 export function FichaEquipo({ id, base }: { id: string; base: "tecnico" | "admin" }) {
-  const { trabajos, visitas, ahora, actualizarEquipo, usuarioActualId } = useStore();
+  const { trabajos, visitas, ahora, actualizarEquipo, usuarioActualId, tecnicoActualId } = useStore();
   const e = getEquipo(id);
   const c = getCliente(e.clienteId);
   const hoy = ahora.slice(0, 10);
@@ -121,6 +122,15 @@ export function FichaEquipo({ id, base }: { id: string; base: "tecnico" | "admin
       </section>
 
       <SeccionPuestas equipoId={id} base={base} />
+
+      <section className="rounded-2xl border border-borde bg-superficie p-4" aria-label="Etiqueta QR">
+        <h2 className="mb-1 flex items-center gap-2 text-lg font-semibold"><QrCode size={20} className="text-marca-700" /> Etiqueta QR</h2>
+        <p className="mb-3 text-sm text-tinta-2">
+          {e.etiquetaPegadaEn ? `Pegada el ${fechaCorta(e.etiquetaPegadaEn)}. ` : "Aún no se ha pegado en el equipo. "}
+          Con este código el cliente pide servicio técnico directo a Surmaq.
+        </p>
+        <SeccionEtiqueta equipo={e} onPegada={(p) => actualizarEquipo(e.id, p ? { etiquetaPegadaEn: ahora, etiquetaPegadaPor: base === "tecnico" ? tecnicoActualId : usuarioActualId } : { etiquetaPegadaEn: undefined, etiquetaPegadaPor: undefined })} />
+      </section>
 
       <section className="rounded-2xl border border-borde bg-superficie p-4" aria-label="Fotos del equipo">
         <h2 className="mb-3 flex items-center gap-2 text-lg font-semibold"><Camera size={20} className="text-marca-700" /> Fotos y placa</h2>

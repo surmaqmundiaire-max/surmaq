@@ -69,6 +69,7 @@ export const clientes: Cliente[] = [
   { id: "c5", razonSocial: "Textiles Sierra Norte S.A.", ruc: "1790000000005", direccion: "Centro Industrial Cayambe", ciudad: "Cayambe", industria: "Textiles", lat: 0.0454, lng: -78.1847, responsableId: "u-aharo", recurrente: false, contacto: { nombre: "Geovanny Chicaiza", telefono: "022000005" } },
   { id: "c6", razonSocial: "Agroexportadora El Oro S.A.", ruc: "0790000000006", direccion: "Vía Machala - Pasaje km 3", ciudad: "Machala", industria: "Empacadora", lat: -3.2581, lng: -79.9554, responsableId: "u-jalvear", recurrente: true, contacto: { nombre: "Rodolfo Miranda", telefono: "072000006" } },
   { id: "c7", razonSocial: "Laboratorio Farmacéutico Norte", ruc: "1790000000007", direccion: "Av. Eloy Alfaro N45", ciudad: "Quito", industria: "Farmacéutica", lat: -0.1652, lng: -78.4721, responsableId: "u-alopez", recurrente: true, contacto: { nombre: "Dra. Jhoanna Ríos", telefono: "022000007" } },
+  { id: "c9", razonSocial: "Cerámicas del Austro S.A.", ruc: "0190000000009", direccion: "Parque Industrial de Cuenca", ciudad: "Cuenca", industria: "Ceramicas", lat: -2.8667, lng: -78.9789, responsableId: "u-jalvear", recurrente: true, contacto: { nombre: "Ing. Pablo Cordero", telefono: "072000009" } },
   { id: "c8", razonSocial: "Talleres Durán Pintura Industrial", ruc: "0990000000008", direccion: "Km 4.5 vía Durán - Tambo", ciudad: "Durán", industria: "Servicio de Chapa y Pintura", lat: -2.1711, lng: -79.8302, responsableId: "u-jmerchan", recurrente: false, contacto: { nombre: "Edgar Tutillo", telefono: "042000008" } },
 ];
 
@@ -82,6 +83,7 @@ export const equipos: Equipo[] = [
   { id: "e7", clienteId: "c5", nombre: "Equipo de pintura en polvo", lineaProducto: "Equipo pintura en polvo", marca: "Gema", modelo: "OptiFlex 2", serie: "GM-11872", anio: 2022, codigoQr: "OS-E7", proximoMantenimiento: "2026-12-01" },
   { id: "e8", clienteId: "c6", nombre: "Compresor de tornillo 40 HP", lineaProducto: "Compresores de Tornillo", marca: "Kaeser", modelo: "ASD 40", serie: "KS-77310", anio: 2017, codigoQr: "OS-E8", proximoMantenimiento: "2026-11-09", horasUso: 41020 },
   { id: "e9", clienteId: "c7", nombre: "Secador refrigerativo 200 CFM", lineaProducto: "Tratamiento de Aire", marca: "OMI", modelo: "ED 216", serie: "OMI-60122", anio: 2023, codigoQr: "OS-E9", proximoMantenimiento: "2026-10-28" },
+  { id: "e11", clienteId: "c9", nombre: "Compresor de tornillo 30 HP", lineaProducto: "Compresores de Tornillo", marca: "Kaeser", modelo: "SM 15", serie: "KS-90231", anio: 2021, codigoQr: "OS-E11", proximoMantenimiento: "2026-11-10", horasUso: 16400 },
   { id: "e10", clienteId: "c8", nombre: "Compresor de pistón 7.5 HP", lineaProducto: "Compresores de Pistón", marca: "ABAC", modelo: "B6000", serie: "ABC-19004", anio: 2016, codigoQr: "OS-E10", proximoMantenimiento: "2026-12-15", horasUso: 12010 },
 ];
 
@@ -97,6 +99,7 @@ export const trabajos: Trabajo[] = [
   { id: "t2770", numero: 2770, equipoId: "e9", titulo: "Revisión de alarma de alta temperatura", tipo: "revision", lugar: "en_cliente", estado: "cerrado", asignadoId: "u-alopez", fechaIngreso: t("2026-10-21", "09:30"), fechaCierre: t("2026-10-21", "13:00"), estadoGeneralEquipo: "Condensador sucio, se limpió" },
   { id: "t2768", numero: 2768, equipoId: "e2", titulo: "Mantenimiento 18.000 h", tipo: "mantenimiento", lugar: "en_cliente", estado: "cerrado", asignadoId: "u-jalvear", fechaIngreso: t("2026-05-02", "08:00"), fechaCierre: t("2026-05-02", "14:00"), estadoGeneralEquipo: "Bueno" },
   { id: "t2778", numero: 2778, equipoId: "e4", titulo: "Ampliación de tubería zona de extrusión", tipo: "instalacion", lugar: "en_cliente", estado: "en_progreso", asignadoId: "u-jmerchan", fechaIngreso: t("2026-10-30", "08:00") },
+  { id: "t2783", numero: 2783, equipoId: "e11", titulo: "Mantenimiento 16.000 h en Cuenca", tipo: "mantenimiento", lugar: "en_cliente", estado: "abierto", asignadoId: "u-jalvear", fechaIngreso: t("2026-11-05", "11:00") },
   { id: "t2775", numero: 2775, equipoId: "e10", titulo: "Ensamblaje de cabezal nuevo", tipo: "ensamblaje", lugar: "en_oficina", estado: "abierto", asignadoId: "u-hchicazawa", fechaIngreso: t("2026-11-02", "11:00") },
 ];
 
@@ -109,6 +112,7 @@ const base = { autoEmpresa: true, acompanantes: [] as string[], fotos: [] as Vis
 const visitasHoy: Visita[] = [
   { ...base, id: "v-hoy-1", trabajoId: "t2781", tecnicoId: "u-jalvear", descripcion: "Instalación de secador OMI", programadaInicio: t(HOY, "12:00"), programadaFin: t(HOY, "14:00"), estado: "finalizada", checkinEn: t(HOY, "12:16"), checkoutEn: t(HOY, "14:31"), checkinDistanciaM: 35, comentarios: "Falta el punto de 220 V del secador", checklist: { ...vacia("instalacion", true), "Conexión eléctrica verificada": false }, firmadoPor: "Julio Alay" },
   { ...base, id: "v-hoy-2", trabajoId: "t2781", tecnicoId: "u-jalvear", programadaPor: "u-jefe", descripcion: "Conexión eléctrica secador (próximo chequeo)", programadaInicio: t("2026-11-09", "09:00"), programadaFin: t("2026-11-09", "11:00"), estado: "programada", checklist: vacia("instalacion") },
+  { ...base, id: "v-cue-1", trabajoId: "t2783", tecnicoId: "u-jalvear", programadaPor: "u-coord-gye", vistaPorTecnico: true, descripcion: "Mantenimiento 16.000 h", programadaInicio: t("2026-11-10", "09:00"), programadaFin: t("2026-11-10", "12:00"), estado: "programada", checklist: vacia("mantenimiento") },
   { ...base, id: "v-hoy-3", trabajoId: "t2779", tecnicoId: "u-jmerchan", descripcion: "Cambio de separador y aceite", programadaInicio: t(HOY, "08:30"), programadaFin: t(HOY, "12:30"), estado: "finalizada", checkinEn: t(HOY, "08:41"), checkoutEn: t(HOY, "12:55"), checkinDistanciaM: 60, acompanantes: ["u-hchicazawa"], checklist: vacia("mantenimiento", true) },
   { ...base, id: "v-hoy-4", trabajoId: "t2778", tecnicoId: "u-jmerchan", descripcion: "Tendido de tubería zona extrusión", programadaInicio: t(HOY, "14:00"), programadaFin: t(HOY, "17:30"), estado: "en_curso", checkinEn: t(HOY, "14:07"), checkinDistanciaM: 80, checklist: vacia("instalacion") },
   { ...base, id: "v-hoy-5", trabajoId: "t2780", tecnicoId: "u-hchicazawa", programadaPor: "u-coord-gye", descripcion: "Diagnóstico de ruido en cabezal", programadaInicio: t(HOY, "15:30"), programadaFin: t(HOY, "17:00"), estado: "programada", checklist: vacia("revision") },

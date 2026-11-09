@@ -3,9 +3,9 @@
 import Link from "next/link";
 import { use, useCallback, useState } from "react";
 import { useRouter } from "next/navigation";
-import { ArrowLeft, Car, CheckCircle2, Mail, Trash2, XCircle } from "lucide-react";
+import { ArrowLeft, Car, CheckCircle2, Mail, Phone, QrCode, Trash2, XCircle } from "lucide-react";
 import { useStore } from "@/lib/store";
-import { cliente as getCliente, equipo as getEquipo, ocupacion, perfil, puede, ROL_LABEL, tecnicosProgramables } from "@/lib/selectors";
+import { choques, cliente as getCliente, equipo as getEquipo, pedidoPor, perfil, puede, ROL_LABEL, tecnicosProgramables } from "@/lib/selectors";
 import { fechaCorta, fechaLarga, hora, toLocalIso } from "@/lib/format";
 import { TIPO_LABEL, VEHICULOS } from "@/lib/mock-data";
 import type { Solicitud, TipoTrabajo } from "@/lib/types";
@@ -14,6 +14,7 @@ import { ChipTipo, IconoTipo, MiniaturaEquipo, TIPO_VISUAL } from "@/components/
 import { EstadoSolicitudBadge } from "@/components/solicitud-estado";
 import { Campo, Chips, Programacion, claseCampo } from "@/components/formularios";
 import { SelectorDisponibilidad } from "@/components/disponibilidad";
+import { horasViaje, textoHoras } from "@/lib/geografia";
 import { useAviso } from "@/components/aviso";
 
 export default function SolicitudDetalle({ params }: { params: Promise<{ id: string }> }) {
@@ -36,14 +37,17 @@ export default function SolicitudDetalle({ params }: { params: Promise<{ id: str
       <header className="flex flex-wrap items-start gap-3">
         <IconoTipo tipo={sol.tipo} size={48} />
         <div className="min-w-0 flex-1">
-          <p className="flex flex-wrap items-center gap-2 text-sm text-tinta-2">Solicitud Nº {sol.numero} <EstadoSolicitudBadge estado={sol.estado} /> <ChipTipo tipo={sol.tipo} /></p>
+          <p className="flex flex-wrap items-center gap-2 text-sm text-tinta-2">Solicitud Nº {sol.numero} <EstadoSolicitudBadge estado={sol.estado} /> <ChipTipo tipo={sol.tipo} />
+            {sol.origen === "cliente_qr" && <span className="inline-flex items-center gap-1 rounded-full bg-info-bg px-2 py-0.5 text-xs font-semibold text-info"><QrCode size={12} /> Cliente vía QR</span>}
+            {sol.urgente && <span className="inline-flex items-center gap-1 rounded-full bg-critico px-2 py-0.5 text-xs font-semibold text-white">Urgente · equipo detenido</span>}
+          </p>
           <h1 className="text-2xl font-bold">{c.razonSocial}</h1>
           <p className="text-tinta-2">{sol.descripcion}</p>
         </div>
       </header>
 
       <section className="grid gap-4 rounded-2xl border border-borde bg-superficie p-4 text-sm sm:grid-cols-2 lg:grid-cols-3">
-        <Dato k="Pedida por" v={`${perfil(sol.vendedorId).nombre} · ${fechaCorta(sol.solicitadaEn)} ${hora(sol.solicitadaEn)}`} />
+        <Dato k="Pedida por" v={`${pedidoPor(sol)} · ${fechaCorta(sol.solicitadaEn)} ${hora(sol.solicitadaEn)}`} />
         <Dato k="Contacto" v={sol.contacto} />
         <Dato k="Departamento" v={`Mantenimiento ${sol.dpto}`} />
         <Dato k="Requerida para" v={`${fechaLarga(sol.fechaRequerida)} · ${sol.horaRequerida}`} />
@@ -57,6 +61,12 @@ export default function SolicitudDetalle({ params }: { params: Promise<{ id: str
             <span className="text-tinta-2">{e.marca} {e.modelo} · serie {e.serie}</span>
           </dd>
         </div>
+        {sol.solicitante && (
+          <div>
+            <dt className="text-tinta-3">Llamar al cliente</dt>
+            <dd><a href={`tel:${sol.solicitante.telefono}`} className="inline-flex items-center gap-1 font-semibold text-marca-700 hover:underline"><Phone size={14} /> {sol.solicitante.nombre} · {sol.solicitante.telefono}</a></dd>
+          </div>
+        )}
         {sol.tecnicoPreferidoId && <Dato k="Técnico preferido" v={perfil(sol.tecnicoPreferidoId).nombre} />}
         {sol.notificarA.length > 0 && <div className="sm:col-span-2 lg:col-span-3"><Dato k="Notificar a" v={sol.notificarA.join(", ")} /></div>}
       </section>
@@ -106,7 +116,12 @@ function Revision({ sol, onListo }: { sol: Solicitud; onListo: (ruta: string) =>
   const [fecha, setFecha] = useState(sol.fechaRequerida);
   const [llegada, setLlegada] = useState(sol.horaRequerida);
   const [dur, setDur] = useState(String(sol.duracionH ?? 2));
-  const menosUnaHora = (h: string) => `${String(Math.max(6, Number(h.slice(0, 2)) - 1)).padStart(2, "0")}:${h.slice(3)}`;
+  // Salida de la oficina = llegada menos el viaje desde la ciudad del departamento (mínimo 30 min)
+  const viajeCliente = Math.max(0.5, horasViaje(sol.dpto, getCliente(sol.clienteId).ciudad));
+  const menosUnaHora = (h: string) => {
+    const min = Math.max(5 * 60, Number(h.slice(0, 2)) * 60 + Number(h.slice(3, 5)) - Math.round(viajeCliente * 60));
+    return `${String(Math.floor(min / 60)).padStart(2, "0")}:${String(min % 60).padStart(2, "0")}`;
+  };
   const [salida, setSalida] = useState(menosUnaHora(sol.horaRequerida));
   const [tecnico, setTecnico] = useState(sol.tecnicoPreferidoId && programables.some((t) => t.id === sol.tecnicoPreferidoId) ? sol.tecnicoPreferidoId : "");
   const [acomp, setAcomp] = useState<string[]>([]);
@@ -147,7 +162,7 @@ function Revision({ sol, onListo }: { sol: Solicitud; onListo: (ruta: string) =>
         {cambio && <p className="text-sm text-info">Cambiaste la hora: el vendedor verá la nueva fecha.</p>}
         <div className="mt-2"><Programacion fecha={fecha} setFecha={setFecha} horaIni={llegada} setHoraIni={(h) => { setLlegada(h); setSalida(menosUnaHora(h)); }} dur={dur} setDur={setDur} /></div>
         <label className="mt-3 block max-w-56 text-sm">
-          <span className="font-medium text-tinta-2">Salida de la oficina</span>
+          <span className="font-medium text-tinta-2">Salida de la oficina <span className="font-normal text-tinta-3">· viaje {textoHoras(viajeCliente)}</span></span>
           <input type="time" value={salida} onChange={(e) => setSalida(e.target.value)} className={claseCampo} />
         </label>
       </div>
@@ -159,7 +174,7 @@ function Revision({ sol, onListo }: { sol: Solicitud; onListo: (ruta: string) =>
         ) : (
           <>
             {sol.tecnicoPreferidoId && <p className="text-sm text-tinta-2">El vendedor prefirió a <strong>{perfil(sol.tecnicoPreferidoId).nombre}</strong>{tecnico !== sol.tecnicoPreferidoId ? " (ya no está libre en el horario elegido o lo cambiaste)" : ""}.</p>}
-            <SelectorDisponibilidad ciudad={sol.dpto} fecha={fecha} horaIni={llegada} horas={Number(dur)} valor={tecnico} onChange={elegirTecnico} permitirSinPreferencia={false} />
+            <SelectorDisponibilidad ciudad={sol.dpto} destino={{ ciudad: getCliente(sol.clienteId).ciudad, clienteId: sol.clienteId }} fecha={fecha} horaIni={llegada} horas={Number(dur)} valor={tecnico} onChange={elegirTecnico} permitirSinPreferencia={false} />
           </>
         )}
         <div>
@@ -167,7 +182,7 @@ function Revision({ sol, onListo }: { sol: Solicitud; onListo: (ruta: string) =>
           <div className="mt-1.5 flex flex-wrap gap-2">
             {programables.filter((t) => t.id !== tecnico).map((t) => {
               const on = acomp.includes(t.id);
-              const ocupado = ocupacion(t.id, `${fecha}T${llegada}:00`, finPedido, s.visitas, s.trabajos).length > 0;
+              const ocupado = choques(t.id, `${fecha}T${llegada}:00`, finPedido, { ciudad: getCliente(sol.clienteId).ciudad, clienteId: sol.clienteId }, s.visitas, s.trabajos).length > 0;
               return (
                 <button key={t.id} type="button" aria-pressed={on} disabled={ocupado && !on} title={ocupado ? "Ocupado en ese horario" : undefined} onClick={() => setAcomp(on ? acomp.filter((x) => x !== t.id) : [...acomp, t.id])}
                   className={cx("inline-flex min-h-11 items-center gap-2 rounded-full border py-1 pr-4 pl-1 text-sm font-medium disabled:cursor-not-allowed disabled:opacity-45", on ? "border-marca-800 bg-marca-800 text-white" : "border-borde bg-superficie")}>
@@ -184,7 +199,7 @@ function Revision({ sol, onListo }: { sol: Solicitud; onListo: (ruta: string) =>
       </div>
 
       {sol.notificarA.length > 0 && (
-        <p className="flex items-center gap-1.5 text-sm text-tinta-2"><Mail size={15} /> Al programar se avisará a {perfil(sol.vendedorId).nombre} y a {sol.notificarA.join(", ")}.</p>
+        <p className="flex items-center gap-1.5 text-sm text-tinta-2"><Mail size={15} /> Al programar se avisará a {sol.origen === "cliente_qr" ? sol.solicitante?.nombre : perfil(sol.vendedorId).nombre} y a {sol.notificarA.join(", ")}.</p>
       )}
 
       {rechazando ? (

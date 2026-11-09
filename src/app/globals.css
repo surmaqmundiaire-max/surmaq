@@ -85,3 +85,8 @@ body {
   aside, nav[aria-label="Secciones"], [role="region"][aria-label="Recordatorios"] { display: none !important; }
   body { background: white; }
 }
+
+/* Impresión de etiqueta QR: solo la etiqueta, a tamaño de etiqueta adhesiva */
+@media print {
+  .etiqueta-qr { border-width: 1px; break-inside: avoid; }
+}

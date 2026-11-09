@@ -7,6 +7,7 @@ import {
   ListChecks, Navigation, NotebookPen, Phone, Plus, Sparkles, Timer, Trash2, Users, X, type LucideIcon,
 } from "lucide-react";
 import { ChipTipo, IconoTipo } from "@/components/visual";
+import { SeccionEtiqueta } from "@/components/qr";
 import { useStore } from "@/lib/store";
 import { contexto, distanciaM, horasVisita, perfil, ROL_LABEL, tecnicos, UMBRAL_DISTANCIA_M } from "@/lib/selectors";
 import { CHECKLISTS, TIPO_LABEL } from "@/lib/mock-data";
@@ -516,7 +517,9 @@ function Cierre({ id, setPaso, setCerrando }: { id: string; setPaso: SetPaso; se
       return [mk(1, "Próximo día hábil"), mk(3, "En 3 días hábiles"), mk(5, "En una semana")];
     }, [s.ahora]);
 
-    const listo = terminado === "si" ? !!estadoEquipo : terminado === "no" ? !!proxima : false;
+    const esArranque = trabajo.tipo === "arranque";
+    const etiquetaOk = !esArranque || !!equipo.etiquetaPegadaEn;
+    const listo = (terminado === "si" ? !!estadoEquipo : terminado === "no" ? !!proxima : false) && etiquetaOk;
 
     const redactar = () => {
       setGenerando(true);
@@ -607,6 +610,14 @@ function Cierre({ id, setPaso, setCerrando }: { id: string; setPaso: SetPaso; se
             )}
           </section>
 
+          {esArranque && (
+            <section className={cx("rounded-2xl border p-4", etiquetaOk ? "border-ok/30 bg-ok-bg/50" : "border-aviso/40 bg-aviso-bg/60")}>
+              <h2 className="font-semibold">Etiqueta QR del equipo <span className="text-critico">*</span></h2>
+              <p className="mb-3 text-sm text-tinta-2">En todo arranque se pega la etiqueta: el cliente la escanea para pedir servicio técnico.</p>
+              <SeccionEtiqueta equipo={equipo} compacta onPegada={(p) => s.actualizarEquipo(equipo.id, p ? { etiquetaPegadaEn: s.ahora, etiquetaPegadaPor: v.tecnicoId } : { etiquetaPegadaEn: undefined, etiquetaPegadaPor: undefined })} />
+            </section>
+          )}
+
           <section>
             <div className="flex items-center justify-between gap-2">
               <h2 className="font-semibold">Informe interno</h2>
@@ -646,7 +657,7 @@ function Cierre({ id, setPaso, setCerrando }: { id: string; setPaso: SetPaso; se
           </BotonPrincipal>
           {!listo && (
             <p className="mt-2 text-center text-xs text-tinta-3">
-              {terminado === null ? "Indica si el mantenimiento quedó terminado" : terminado === "si" ? "Elige el estado general del equipo" : "Elige la fecha de la próxima tarea"}
+              {!etiquetaOk && terminado !== null && (terminado === "si" ? !!estadoEquipo : !!proxima) ? "Pega la etiqueta QR en el equipo y márcala" : terminado === null ? "Indica si el mantenimiento quedó terminado" : terminado === "si" ? "Elige el estado general del equipo" : "Elige la fecha de la próxima tarea"}
             </p>
           )}
         </BarraAccion>
