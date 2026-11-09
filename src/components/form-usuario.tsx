@@ -10,6 +10,7 @@ import { useAviso } from "./aviso";
 import { cx } from "./ui";
 
 const CIUDADES: [string, string][] = [["Guayaquil", "Guayaquil"], ["Quito", "Quito"]];
+const NIVELES: [NonNullable<Perfil["nivel"]>, string][] = [["T1", "Ayudante"], ["T2", "Mecánico / instalador"], ["T3", "Electromecánico"], ["T4", "Especialista"], ["T5", "Ingeniero de servicio"]];
 const DESCRIPCION: Record<Rol, string> = {
   admin: "Todo, incluidos los usuarios.",
   jefe: "Programa tareas a todos los técnicos, gestiona usuarios y aprueba permisos.",
@@ -28,6 +29,8 @@ export function FormUsuario({ inicial, onGuardado }: { inicial?: Perfil; onGuard
   const [rol, setRol] = useState<Rol>(inicial?.rol ?? "tecnico");
   const [ciudad, setCiudad] = useState(inicial?.ciudad ?? "Guayaquil");
   const [aCargo, setACargo] = useState<string[]>(inicial?.ciudadesACargo ?? [inicial?.ciudad ?? "Guayaquil"]);
+  const [nivel, setNivel] = useState<NonNullable<Perfil["nivel"]>>(inicial?.nivel ?? "T2");
+  const [certs, setCerts] = useState({ certAltura: !!inicial?.certAltura, certElectrica: !!inicial?.certElectrica, certPintura: !!inicial?.certPintura });
   const emailOk = /^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(email);
   const duplicado = s.perfiles.some((p) => p.email.toLowerCase() === email.toLowerCase() && p.id !== inicial?.id);
   const listo = nombre.trim().length > 2 && emailOk && !duplicado;
@@ -74,6 +77,33 @@ export function FormUsuario({ inicial, onGuardado }: { inicial?: Perfil; onGuard
         </div>
       </div>
 
+      {rol === "tecnico" && (
+        <div className="space-y-3 rounded-xl bg-fondo p-3">
+          <div>
+            <p className="text-sm font-medium text-tinta-2">Nivel técnico (para armar cuadrillas en las cotizaciones)</p>
+            <div role="radiogroup" aria-label="Nivel" className="mt-1.5 flex flex-wrap gap-2">
+              {NIVELES.map(([k, l]) => (
+                <button key={k} type="button" role="radio" aria-checked={nivel === k} onClick={() => setNivel(k)}
+                  className={cx("min-h-11 rounded-full border px-3 text-left text-sm", nivel === k ? "border-marca-800 bg-marca-800 text-white" : "border-borde bg-superficie")}>
+                  <b>{k}</b> · {l}
+                </button>
+              ))}
+            </div>
+          </div>
+          <div>
+            <p className="text-sm font-medium text-tinta-2">Certificaciones vigentes</p>
+            <div className="mt-1.5 flex flex-wrap gap-2">
+              {([["certAltura", "Trabajo en altura"], ["certElectrica", "Instalaciones eléctricas"], ["certPintura", "Sistemas de pintura Gema / Binks"]] as const).map(([k, l]) => (
+                <button key={k} type="button" aria-pressed={certs[k]} onClick={() => setCerts({ ...certs, [k]: !certs[k] })}
+                  className={cx("min-h-11 rounded-full border px-3 text-sm font-medium", certs[k] ? "border-ok bg-ok text-white" : "border-borde bg-superficie")}>
+                  {l}
+                </button>
+              ))}
+            </div>
+          </div>
+        </div>
+      )}
+
       {rol === "coordinador" && (
         <div>
           <p className="text-sm font-medium text-tinta-2">Coordina técnicos de</p>
@@ -104,6 +134,7 @@ export function FormUsuario({ inicial, onGuardado }: { inicial?: Perfil; onGuard
             ciudad,
             area: rol === "admin" ? "Administración" : "Mantenimiento",
             ciudadesACargo: rol === "coordinador" ? aCargo : undefined,
+            ...(rol === "tecnico" ? { nivel, ...certs } : {}),
           };
           if (inicial) {
             s.actualizarPerfil(inicial.id, datos);

@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { CalendarClock, Camera, Plus, QrCode } from "lucide-react";
+import { Calculator, CalendarClock, Camera, Plus, QrCode } from "lucide-react";
 import { ChipTipo, IconoTipo, MiniaturaEquipo } from "./visual";
 import { useStore } from "@/lib/store";
 import { cliente as getCliente, equipo as getEquipo, perfil, puede } from "@/lib/selectors";
@@ -77,8 +77,12 @@ export function FichaEquipo({ id, base }: { id: string; base: "tecnico" | "admin
       )}
 
       <section>
-        <div className="mb-2 flex items-center justify-between gap-2 px-1">
+        <div className="mb-2 flex flex-wrap items-center justify-between gap-2 px-1">
           <h2 className="text-lg font-semibold">Mantenimientos <span className="font-normal text-tinta-3 tabular">({historial.length})</span></h2>
+          <span className="flex flex-wrap gap-2">
+          <Link href={`/${base}/cotizaciones/nueva?equipo=${id}`} className="inline-flex min-h-11 items-center gap-1.5 rounded-xl border border-marca-800 px-3 text-sm font-semibold text-marca-800 hover:bg-marca-50">
+            <Calculator size={17} /> Cotizar
+          </Link>
           {base === "admin" && !puede(perfil(usuarioActualId).rol, "programar_tareas") ? (
             <Link href={`/admin/solicitudes/nueva?equipo=${id}`} className="inline-flex min-h-11 items-center gap-1.5 rounded-xl bg-marca-800 px-4 text-sm font-semibold text-white hover:bg-marca-900">
               <Plus size={17} /> Solicitar visita
@@ -88,6 +92,7 @@ export function FichaEquipo({ id, base }: { id: string; base: "tecnico" | "admin
               <Plus size={17} /> Nuevo<span className="hidden @xl:inline"> mantenimiento</span>
             </Link>
           )}
+          </span>
         </div>
         {historial.length === 0 ? (
           <Vacio>Este equipo aún no tiene mantenimientos registrados.</Vacio>

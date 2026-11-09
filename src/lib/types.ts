@@ -16,6 +16,11 @@ export interface Perfil {
   area: string;
   telefono?: string;
   activo?: boolean;
+  /** Nivel técnico para el cotizador (T1 ayudante … T5 ingeniero de servicio) */
+  nivel?: "T1" | "T2" | "T3" | "T4" | "T5";
+  certAltura?: boolean;
+  certElectrica?: boolean;
+  certPintura?: boolean;
   /** Ciudades que coordina (coordinadores); vacío = todas */
   ciudadesACargo?: string[];
 }

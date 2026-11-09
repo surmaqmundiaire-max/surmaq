@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { use, useCallback, useState } from "react";
 import { useRouter } from "next/navigation";
-import { ArrowLeft, Car, CheckCircle2, Mail, Phone, QrCode, Trash2, XCircle } from "lucide-react";
+import { ArrowLeft, Calculator, Car, CheckCircle2, Mail, Phone, QrCode, Trash2, XCircle } from "lucide-react";
 import { useStore } from "@/lib/store";
 import { choques, cliente as getCliente, equipo as getEquipo, pedidoPor, perfil, puede, ROL_LABEL, tecnicosProgramables } from "@/lib/selectors";
 import { fechaCorta, fechaLarga, hora, toLocalIso } from "@/lib/format";
@@ -135,9 +135,14 @@ function Revision({ sol, onListo }: { sol: Solicitud; onListo: (ruta: string) =>
 
   return (
     <section className="space-y-5 rounded-2xl border border-marca-600/30 bg-superficie p-4 sm:p-6" aria-label="Revisión">
-      <div>
-        <h2 className="text-lg font-semibold">Revisar y programar</h2>
-        <p className="text-sm text-tinta-2">Como {ROL_LABEL[yo.rol].toLowerCase()}, puedes ajustar lo que pidió el vendedor antes de programar.</p>
+      <div className="flex flex-wrap items-start justify-between gap-3">
+        <div>
+          <h2 className="text-lg font-semibold">Revisar y programar</h2>
+          <p className="text-sm text-tinta-2">Como {ROL_LABEL[yo.rol].toLowerCase()}, puedes ajustar lo que pidió el vendedor antes de programar.</p>
+        </div>
+        <Link href={`/admin/cotizaciones/nueva?solicitud=${sol.id}`} className="inline-flex min-h-11 items-center gap-1.5 rounded-xl border border-marca-800 px-3 text-sm font-semibold text-marca-800 hover:bg-marca-50">
+          <Calculator size={17} /> Cotizar antes de programar
+        </Link>
       </div>
 
       <div>

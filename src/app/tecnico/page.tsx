@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { CalendarDays, CheckCircle2, ChevronRight, Clock, Navigation, Play, Plus, Timer, type LucideIcon } from "lucide-react";
+import { Calculator, CalendarDays, CheckCircle2, ChevronRight, Clock, Navigation, Play, Plus, Timer, type LucideIcon } from "lucide-react";
 import { ChipTipo, IconoTipo } from "@/components/visual";
 import { useStore } from "@/lib/store";
 import { contexto, horasVisita, perfil } from "@/lib/selectors";
@@ -67,9 +67,14 @@ export default function Hoy() {
           </Seccion>
         )}
 
-        <Link href="/tecnico/mantenimientos/nuevo" className="flex min-h-14 items-center justify-center gap-2 rounded-2xl border-2 border-dashed border-marca-600/40 font-semibold text-marca-800 active:bg-marca-50">
-          <Plus size={20} /> Trabajo no programado
-        </Link>
+        <div className="grid grid-cols-2 gap-2">
+          <Link href="/tecnico/mantenimientos/nuevo" className="flex min-h-14 items-center justify-center gap-2 rounded-2xl border-2 border-dashed border-marca-600/40 px-2 text-center text-sm font-semibold text-marca-800 active:bg-marca-50">
+            <Plus size={18} className="shrink-0" /> Trabajo no programado
+          </Link>
+          <Link href="/tecnico/cotizaciones" className="flex min-h-14 items-center justify-center gap-2 rounded-2xl border-2 border-dashed border-marca-600/40 px-2 text-center text-sm font-semibold text-marca-800 active:bg-marca-50">
+            <Calculator size={18} className="shrink-0" /> Cotizar un servicio
+          </Link>
+        </div>
       </div>
     </div>
   );

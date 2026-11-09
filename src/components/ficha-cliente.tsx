@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { ChevronRight, MapPin, Phone, Plus } from "lucide-react";
+import { Calculator, ChevronRight, MapPin, Phone, Plus } from "lucide-react";
 import { useStore } from "@/lib/store";
 import { perfil } from "@/lib/selectors";
 import { diasEntre, fechaCorta } from "@/lib/format";
@@ -45,11 +45,16 @@ export function FichaCliente({ id, base }: { id: string; base: Base }) {
       </section>
 
       <section>
-        <div className="mb-2 flex items-center justify-between gap-2">
+        <div className="mb-2 flex flex-wrap items-center justify-between gap-2">
           <h2 className="text-lg font-semibold">Equipos <span className="font-normal text-tinta-3 tabular">({eqs.length})</span></h2>
-          <Link href={r.nuevoEquipo(id)} className="inline-flex min-h-11 items-center gap-1.5 rounded-xl bg-marca-800 px-4 text-sm font-semibold text-white hover:bg-marca-900">
-            <Plus size={17} /> Agregar equipo
-          </Link>
+          <span className="flex flex-wrap gap-2">
+            <Link href={`/${base}/cotizaciones/nueva?cliente=${id}`} className="inline-flex min-h-11 items-center gap-1.5 rounded-xl border border-marca-800 px-3 text-sm font-semibold text-marca-800 hover:bg-marca-50">
+              <Calculator size={17} /> Cotizar
+            </Link>
+            <Link href={r.nuevoEquipo(id)} className="inline-flex min-h-11 items-center gap-1.5 rounded-xl bg-marca-800 px-4 text-sm font-semibold text-white hover:bg-marca-900">
+              <Plus size={17} /> Agregar equipo
+            </Link>
+          </span>
         </div>
         {eqs.length === 0 ? (
           <Vacio>Esta empresa aún no tiene equipos. Agrega el primero con una foto de su placa.</Vacio>

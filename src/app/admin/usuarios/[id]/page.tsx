@@ -36,7 +36,7 @@ export default function PerfilUsuario({ params }: { params: Promise<{ id: string
         <Avatar nombre={u.nombre} size={64} />
         <div className="min-w-0 flex-1">
           <h1 className="text-2xl font-bold">{u.nombre}</h1>
-          <p className="mt-1 flex flex-wrap items-center gap-2 text-sm text-tinta-2"><ChipRol rol={u.rol} /> {u.ciudadesACargo?.length ? `Coordina ${u.ciudadesACargo.join(" y ")}` : u.ciudad}</p>
+          <p className="mt-1 flex flex-wrap items-center gap-2 text-sm text-tinta-2"><ChipRol rol={u.rol} /> {u.ciudadesACargo?.length ? `Coordina ${u.ciudadesACargo.join(" y ")}` : u.ciudad}{u.nivel && <span className="rounded-full bg-fondo px-2 py-0.5 text-xs font-semibold">Nivel {u.nivel}</span>}{[u.certAltura && "altura", u.certElectrica && "eléctrica", u.certPintura && "pintura"].filter(Boolean).map((c) => <span key={String(c)} className="rounded-full bg-ok-bg px-2 py-0.5 text-xs font-semibold text-ok">Cert. {c}</span>)}</p>
           <p className="mt-2 flex flex-wrap gap-x-4 gap-y-1 text-sm">
             <a href={`mailto:${u.email}`} className="inline-flex items-center gap-1 text-marca-700 hover:underline"><Mail size={14} /> {u.email}</a>
             {u.telefono && <a href={`tel:${u.telefono}`} className="inline-flex items-center gap-1 text-marca-700 hover:underline"><Phone size={14} /> {u.telefono}</a>}

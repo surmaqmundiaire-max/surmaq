@@ -5,6 +5,8 @@
 import { createContext, useCallback, useContext, useEffect, useMemo, useState } from "react";
 import * as mock from "./mock-data";
 import type { Cliente, Equipo, Pendiente, Perfil, PuestaEnMarcha, Solicitud, TipoTrabajo, Trabajo, Visita } from "./types";
+import type { ConfigCot, Cotizacion } from "./cotizador/tipos";
+import { CONFIG_COT_DEF } from "./cotizador/config";
 import { registro } from "./selectors";
 import { toLocalIso } from "./format";
 
@@ -17,6 +19,8 @@ interface Estado {
   perfiles: Perfil[];
   solicitudes: Solicitud[];
   puestas: PuestaEnMarcha[];
+  cotizaciones: Cotizacion[];
+  configCot: ConfigCot;
   tecnicoActualId: string;
   /** Usuario con sesión iniciada en el panel (administrador, jefe o coordinador) */
   usuarioActualId: string;
@@ -31,11 +35,13 @@ const inicial = (): Estado => ({
   perfiles: mock.perfiles,
   solicitudes: mock.solicitudes,
   puestas: [],
+  cotizaciones: [],
+  configCot: CONFIG_COT_DEF,
   tecnicoActualId: "u-hchicazawa",
   usuarioActualId: "u-admin",
 });
 
-const KEY = "optimum-maqueta-v6";
+const KEY = "optimum-maqueta-v7";
 
 function useAcciones(set: React.Dispatch<React.SetStateAction<Estado>>, ahora: () => string) {
   const patchVisita = useCallback(
@@ -141,6 +147,20 @@ function useAcciones(set: React.Dispatch<React.SetStateAction<Estado>>, ahora: (
         set((s) => ({ ...s, puestas: s.puestas.map((x) => (x.id === id ? { ...x, respuestas: { ...x.respuestas, [campo]: valor } } : x)) })),
       completarPuesta: (id: string) =>
         set((s) => ({ ...s, puestas: s.puestas.map((x) => (x.id === id ? { ...x, estado: "completada", completadaEn: ahora() } : x)) })),
+      /** Crea o actualiza una cotización (numerada COT-0001, COT-0002…). */
+      guardarCotizacion: (q: Omit<Cotizacion, "id" | "numero" | "creadoEn" | "actualizado"> & { id?: string }) => {
+        const id = q.id ?? `cot-${Date.now()}`;
+        set((s) => {
+          const existe = s.cotizaciones.find((x) => x.id === id);
+          if (existe) return { ...s, cotizaciones: s.cotizaciones.map((x) => (x.id === id ? { ...x, ...q, id, actualizado: ahora() } : x)) };
+          const n = s.cotizaciones.length ? Math.max(...s.cotizaciones.map((x) => Number(x.numero.slice(4)) || 0)) + 1 : 1;
+          return { ...s, cotizaciones: [{ ...q, id, numero: `COT-${String(n).padStart(4, "0")}`, creadoEn: ahora(), actualizado: ahora() } as Cotizacion, ...s.cotizaciones] };
+        });
+        return id;
+      },
+      eliminarCotizacion: (id: string) => set((s) => ({ ...s, cotizaciones: s.cotizaciones.filter((x) => x.id !== id) })),
+      setConfigCot: (c: Partial<ConfigCot>) => set((s) => ({ ...s, configCot: { ...s.configCot, ...c } })),
+      restaurarConfigCot: () => set((s) => ({ ...s, configCot: CONFIG_COT_DEF })),
       marcarVista: (id: string) => patchVisita(id, { vistaPorTecnico: true }),
       iniciarVisita: (id: string, distanciaM: number) =>
         patchVisita(id, { estado: "en_curso", checkinEn: ahora(), checkinDistanciaM: distanciaM }),

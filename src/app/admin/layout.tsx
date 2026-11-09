@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { Building2, CalendarDays, CalendarPlus, ChevronDown, Gauge, Inbox, ListTodo, Lock, RotateCcw, UserCog, Users, Wrench } from "lucide-react";
+import { Building2, Calculator, CalendarDays, CalendarPlus, ChevronDown, Gauge, Inbox, ListTodo, Lock, RotateCcw, UserCog, Users, Wrench } from "lucide-react";
 import { useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { useStore } from "@/lib/store";
@@ -13,6 +13,7 @@ import { BuscadorGlobal } from "@/components/buscador-global";
 const NAV: { href: string; label: string; icono: typeof Gauge; permiso?: Permiso }[] = [
   { href: "/admin", label: "Panel", icono: Gauge, permiso: "ver_panel" },
   { href: "/admin/solicitudes", label: "Solicitudes", icono: Inbox, permiso: "solicitar_visitas" },
+  { href: "/admin/cotizaciones", label: "Cotizaciones", icono: Calculator, permiso: "cotizar" },
   { href: "/admin/programar", label: "Programar tareas", icono: CalendarPlus, permiso: "programar_tareas" },
   { href: "/admin/calendario", label: "Calendario", icono: CalendarDays, permiso: "ver_calendario" },
   { href: "/admin/mantenimientos", label: "Mantenimientos", icono: Wrench, permiso: "ver_panel" },
@@ -27,6 +28,7 @@ const PROTEGIDAS: [string, Permiso][] = [
   ["/admin/usuarios", "gestionar_usuarios"],
   ["/admin/programar", "programar_tareas"],
   ["/admin/solicitudes", "solicitar_visitas"],
+  ["/admin/cotizaciones", "cotizar"],
   ["/admin/calendario", "ver_calendario"],
   ["/admin/mantenimientos", "ver_panel"],
   ["/admin/pendientes", "ver_panel"],

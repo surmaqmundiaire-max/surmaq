@@ -20,6 +20,9 @@ export const VIAJE_MISMA_CIUDAD = 0.5;
 
 const norm = (c: string) => Object.keys(COORD).find((k) => k.toLowerCase() === c.trim().toLowerCase()) ?? c.trim();
 
+/** ¿Tenemos coordenadas de esta ciudad? */
+export const ciudadConocida = (c: string) => !!COORD[norm(c)];
+
 export function horasViaje(origen: string, destino: string): number {
   const a = norm(origen);
   const b = norm(destino);

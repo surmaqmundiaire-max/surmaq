@@ -54,11 +54,11 @@ export const perfiles: Perfil[] = [
   { id: "u-vend-gye", nombre: "Andrea Molina", email: "amolina@surmaq.com", rol: "vendedor", ciudad: "Guayaquil", area: "Ventas", telefono: "0990000020" },
   { id: "u-vend-uio", nombre: "Luis Paredes", email: "lparedes@surmaq.com", rol: "vendedor", ciudad: "Quito", area: "Ventas", telefono: "0990000021" },
   { id: "u-coord-uio", nombre: "Mateo Villacís", email: "mvillacis@surmaq.com", rol: "coordinador", ciudad: "Quito", area: "Mantenimiento", telefono: "0990000012", ciudadesACargo: ["Quito"] },
-  { id: "u-jalvear", nombre: "Jorge Alvear", email: "jalvear@surmaq.com", rol: "tecnico", ciudad: "Guayaquil", area: "Mantenimiento", telefono: "0990000001" },
-  { id: "u-jmerchan", nombre: "Jairo Merchán", email: "jmerchan@surmaq.com", rol: "tecnico", ciudad: "Guayaquil", area: "Mantenimiento", telefono: "0990000002" },
-  { id: "u-hchicazawa", nombre: "Hideki Chicazawa", email: "hchicazawa@surmaq.com", rol: "tecnico", ciudad: "Guayaquil", area: "Mantenimiento", telefono: "0990000003" },
-  { id: "u-alopez", nombre: "Alejandro López", email: "alopez@surmaq.com", rol: "tecnico", ciudad: "Quito", area: "Mantenimiento", telefono: "0990000004" },
-  { id: "u-aharo", nombre: "Anthony Haro", email: "aharo@surmaq.com", rol: "tecnico", ciudad: "Quito", area: "Mantenimiento", telefono: "0990000005" },
+  { id: "u-jalvear", nombre: "Jorge Alvear", email: "jalvear@surmaq.com", rol: "tecnico", ciudad: "Guayaquil", area: "Mantenimiento", telefono: "0990000001", nivel: "T3", certAltura: true, certElectrica: true },
+  { id: "u-jmerchan", nombre: "Jairo Merchán", email: "jmerchan@surmaq.com", rol: "tecnico", ciudad: "Guayaquil", area: "Mantenimiento", telefono: "0990000002", nivel: "T2", certAltura: true },
+  { id: "u-hchicazawa", nombre: "Hideki Chicazawa", email: "hchicazawa@surmaq.com", rol: "tecnico", ciudad: "Guayaquil", area: "Mantenimiento", telefono: "0990000003", nivel: "T4", certElectrica: true, certPintura: true },
+  { id: "u-alopez", nombre: "Alejandro López", email: "alopez@surmaq.com", rol: "tecnico", ciudad: "Quito", area: "Mantenimiento", telefono: "0990000004", nivel: "T3", certAltura: true, certElectrica: true },
+  { id: "u-aharo", nombre: "Anthony Haro", email: "aharo@surmaq.com", rol: "tecnico", ciudad: "Quito", area: "Mantenimiento", telefono: "0990000005", nivel: "T4", certPintura: true },
 ];
 
 export const clientes: Cliente[] = [

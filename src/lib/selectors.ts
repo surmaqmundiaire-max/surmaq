@@ -23,13 +23,13 @@ export const ROL_LABEL: Record<Rol, string> = {
   vendedor: "Vendedor",
 };
 
-export type Permiso = "programar_tareas" | "gestionar_usuarios" | "ver_panel" | "aprobar_permisos" | "solicitar_visitas" | "aprobar_solicitudes" | "ver_calendario";
+export type Permiso = "programar_tareas" | "gestionar_usuarios" | "ver_panel" | "aprobar_permisos" | "solicitar_visitas" | "aprobar_solicitudes" | "ver_calendario" | "cotizar" | "ver_costos" | "aprobar_cotizaciones" | "editar_cotizador";
 const PERMISOS: Record<Rol, Permiso[]> = {
-  admin: ["programar_tareas", "gestionar_usuarios", "ver_panel", "aprobar_permisos", "solicitar_visitas", "aprobar_solicitudes", "ver_calendario"],
-  jefe: ["programar_tareas", "gestionar_usuarios", "ver_panel", "aprobar_permisos", "solicitar_visitas", "aprobar_solicitudes", "ver_calendario"],
-  coordinador: ["programar_tareas", "ver_panel", "solicitar_visitas", "aprobar_solicitudes", "ver_calendario"],
-  tecnico: [],
-  vendedor: ["solicitar_visitas", "ver_calendario"],
+  admin: ["programar_tareas", "gestionar_usuarios", "ver_panel", "aprobar_permisos", "solicitar_visitas", "aprobar_solicitudes", "ver_calendario", "cotizar", "ver_costos", "aprobar_cotizaciones", "editar_cotizador"],
+  jefe: ["programar_tareas", "gestionar_usuarios", "ver_panel", "aprobar_permisos", "solicitar_visitas", "aprobar_solicitudes", "ver_calendario", "cotizar", "ver_costos", "aprobar_cotizaciones", "editar_cotizador"],
+  coordinador: ["programar_tareas", "ver_panel", "solicitar_visitas", "aprobar_solicitudes", "ver_calendario", "cotizar", "aprobar_cotizaciones"],
+  tecnico: ["cotizar"],
+  vendedor: ["solicitar_visitas", "ver_calendario", "cotizar"],
 };
 export const puede = (rol: Rol, p: Permiso) => PERMISOS[rol].includes(p);
 
