@@ -12,7 +12,7 @@ function Contenido() {
     <div>
       <EncabezadoTecnico volver={cliente ? `/tecnico/clientes/${cliente}` : "/tecnico/clientes"} titulo="Agregar equipo" sub="Toma la foto de la placa y la IA llena los datos." />
       <div className="px-4 pt-5">
-        <FormEquipo clienteInicial={cliente} onGuardado={(id) => router.push(`/tecnico/equipos/${id}`)} />
+        <FormEquipo clienteInicial={cliente} onGuardado={(id) => router.push(`/tecnico/equipos/${id}?nuevo=1`)} />
       </div>
     </div>
   );

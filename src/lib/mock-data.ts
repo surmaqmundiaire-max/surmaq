@@ -121,6 +121,9 @@ const visitasHoy: Visita[] = [
   { ...base, id: "v-hoy-8", trabajoId: "t2775", tecnicoId: "u-hchicazawa", descripcion: "Ensamble de cabezal en taller", lugar: "en_oficina", autoEmpresa: false, programadaInicio: t(HOY, "09:00"), programadaFin: t(HOY, "12:00"), estado: "finalizada", checkinEn: t(HOY, "09:10"), checkoutEn: t(HOY, "11:48"), checklist: { ...vacia("ensamblaje", true), "Prueba final": false } },
 ];
 
+// Trabajo en sábado: todo cuenta como horas extra
+visitasHoy.push({ ...base, id: "v-sab-1", trabajoId: "t2778", tecnicoId: "u-jmerchan", descripcion: "Soldadura de tubería con planta parada", programadaInicio: t("2026-10-31", "08:00"), programadaFin: t("2026-10-31", "13:00"), estado: "finalizada", checkinEn: t("2026-10-31", "08:05"), checkoutEn: t("2026-10-31", "13:20"), checkinDistanciaM: 30, checklist: {} });
+
 // Visita olvidada sin cerrar (ayer) — caso típico detectado en el Excel
 const visitaOlvidada: Visita = { ...base, id: "v-olv-1", trabajoId: "t2776", tecnicoId: "u-alopez", descripcion: "Mantenimiento preventivo — día 1", programadaInicio: t("2026-11-05", "08:00"), programadaFin: t("2026-11-05", "16:00"), estado: "en_curso", checkinEn: t("2026-11-05", "08:12"), checkinDistanciaM: 40, checklist: vacia("mantenimiento") };
 

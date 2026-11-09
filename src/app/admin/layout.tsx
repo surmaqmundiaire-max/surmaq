@@ -18,7 +18,7 @@ const NAV: { href: string; label: string; icono: typeof Gauge; permiso?: Permiso
   { href: "/admin/mantenimientos", label: "Mantenimientos", icono: Wrench, permiso: "ver_panel" },
   { href: "/admin/pendientes", label: "Pendientes", icono: ListTodo, permiso: "ver_panel" },
   { href: "/admin/clientes", label: "Clientes", icono: Building2 },
-  { href: "/admin/tecnicos", label: "Técnicos", icono: Users, permiso: "ver_panel" },
+  { href: "/admin/tecnicos", label: "Horas técnicos", icono: Users, permiso: "ver_panel" },
   { href: "/admin/usuarios", label: "Usuarios", icono: UserCog, permiso: "gestionar_usuarios" },
 ];
 

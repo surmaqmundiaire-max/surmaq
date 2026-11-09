@@ -358,12 +358,12 @@ export function FormEquipo({ clienteInicial, onGuardado }: { clienteInicial?: st
 }
 
 // ---------- Mantenimiento ----------
-export function FormMantenimiento({ equipoInicial, tecnicoInicial, base, onGuardado }: { equipoInicial?: string; tecnicoInicial?: string; base: "admin" | "tecnico"; onGuardado: (id: string) => void }) {
+export function FormMantenimiento({ equipoInicial, tecnicoInicial, tipoInicial, base, onGuardado }: { equipoInicial?: string; tecnicoInicial?: string; tipoInicial?: TipoTrabajo; base: "admin" | "tecnico"; onGuardado: (id: string) => void }) {
   const s = useStore();
   const aviso = useAviso();
   const [equipoId, setEquipoId] = useState(equipoInicial ?? "");
   const [qEq, setQEq] = useState("");
-  const [tipo, setTipo] = useState<TipoTrabajo>("mantenimiento");
+  const [tipo, setTipo] = useState<TipoTrabajo>(tipoInicial ?? "mantenimiento");
   const [titulo, setTitulo] = useState("");
   const e = equipoId ? getEquipo(equipoId) : undefined;
   const responsable = e ? getCliente(e.clienteId).responsableId : s.tecnicoActualId;
