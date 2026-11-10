@@ -13,9 +13,10 @@ import type { Base } from "../migas";
 import { usd, useUsuarioCot } from "./editor";
 import { BarraCambios, TablaEditable, hrs, useBorrador, type Columna } from "./tabla-editable";
 
-const FAMS: [Familia, string][] = [["mant", "Mantenimiento"], ["inst", "Instalación de red y eléctrica"], ["pint", "Sistemas de pintura"]];
+const FAMS: [Familia, string][] = [["mant", "Mantenimiento"], ["vfd", "Variadores Parker"], ["inst", "Instalación de red y eléctrica"], ["pint", "Sistemas de pintura"]];
 const NUEVO: Record<Familia, ItemCatalogo> = {
   mant: { cod: "NEW-01", grupo: "Compresor de tornillo", tipo: "Preventivo", act: "Nuevo mantenimiento", alcance: "", intervalo: "", unidad: "equipo", horas: 1, cx: "Baja", escala: "tamano", fam: "mant", cert: "" },
+  vfd: { cod: "VAR-NEW", grupo: "Variador de velocidad Parker", tipo: "Preventivo", act: "Nuevo servicio a variador", alcance: "", intervalo: "", unidad: "equipo", horas: 1, cx: "Control / variadores", escala: "potencia", fam: "vfd", cert: "electrica", pot: "variador" },
   inst: { cod: "RED-NEW", grupo: "Red de tubería de aluminio", tipo: "Instalación", act: "Nueva partida", alcance: "", intervalo: "—", unidad: "u", horas: 1, cx: "Instalación", escala: "altura", fam: "inst", cert: "" },
   pint: { cod: "PIN-NEW", grupo: "Pintura en polvo (Gema)", tipo: "Preventivo", act: "Nuevo servicio", alcance: "", intervalo: "", unidad: "u", horas: 1, cx: "Pintura – servicio", escala: "ninguna", fam: "pint", cert: "pintura" },
 };
@@ -75,14 +76,14 @@ export function CatalogoCot({ base }: { base: Base }) {
           <input value={q} onChange={(e) => setQ(e.target.value)} placeholder="Buscar código, actividad o grupo" className="h-11 w-full rounded-xl border border-borde bg-superficie pr-3 pl-9 text-sm" />
         </label>
       </div>
-      {fam === "mant" && (
+      {(fam === "mant" || fam === "vfd") && (
         <div role="tablist" aria-label="Vista" className="flex w-fit gap-1 rounded-xl bg-fondo p-1">
           {([["partidas", "Partidas"], ["potencia", "Tarifario por potencia"]] as const).map(([k, l]) => (
             <button key={k} type="button" role="tab" aria-selected={vista === k} onClick={() => setVista(k)} className={cx("min-h-10 rounded-lg px-3 text-sm font-semibold", vista === k ? "bg-superficie text-marca-900 shadow-sm" : "text-tinta-2")}>{l}</button>
           ))}
         </div>
       )}
-      {fam === "mant" && vista === "potencia" ? <TarifarioPotencia filtro={q} /> : <>
+      {(fam === "mant" || fam === "vfd") && vista === "potencia" ? <TarifarioPotencia filtro={q} fam={fam} /> : <>
       <TablaEditable
         filas={filas}
         cols={cols}
@@ -94,7 +95,7 @@ export function CatalogoCot({ base }: { base: Base }) {
         etiquetaAgregar="Agregar partida"
       />
       </>}
-      {editor && (vista === "partidas" || fam !== "mant") && (
+      {editor && (vista === "partidas" || fam === "inst" || fam === "pint") && (
         <BarraCambios
           sucio={b.sucio}
           onDescartar={b.descartar}
@@ -107,17 +108,17 @@ export function CatalogoCot({ base }: { base: Base }) {
 }
 
 /** Mano de obra en sitio por franja de potencia (1 equipo, horario normal, planta industrial). */
-function TarifarioPotencia({ filtro }: { filtro: string }) {
+function TarifarioPotencia({ filtro, fam }: { filtro: string; fam: Familia }) {
   const { configCot: cfg } = useStore();
   return (
     <div className="space-y-5">
       <p className="text-sm text-tinta-2">Valor de mano de obra en sitio para un equipo, en horario normal y planta industrial. No incluye traslado ni viáticos. La cuadrilla sube según la potencia: se usa la mayor entre la que pide el trabajo y la mínima de la franja.</p>
       {cfg.potencias.map((g) => {
-        const items = cfg.catalogo.filter((x) => x.escala === "potencia" && x.pot === g.k && norm(`${x.cod} ${x.act}`).includes(norm(filtro)));
+        const items = cfg.catalogo.filter((x) => x.fam === fam && x.escala === "potencia" && x.pot === g.k && norm(`${x.cod} ${x.act}`).includes(norm(filtro)));
         if (!items.length) return null;
         return (
           <section key={g.k}>
-            <h2 className="mb-2 font-semibold">{g.n}</h2>
+            <h2 className="mb-2 font-semibold">{g.n} <span className="text-sm font-normal text-tinta-3">· {g.u === "cfm" ? "capacidad en cfm" : "potencia en HP"}</span></h2>
             <div className="relative overflow-x-auto rounded-xl border border-borde bg-superficie">
               <table className="w-full text-sm">
                 <thead className="bg-fondo text-left text-xs text-tinta-2">
@@ -135,7 +136,7 @@ function TarifarioPotencia({ filtro }: { filtro: string }) {
                     <tr key={it.cod}>
                       <td className="px-3 py-2"><span className="font-mono text-xs text-tinta-3">{it.cod}</span> <span className="font-medium">{it.act}</span></td>
                       {g.franjas.map((f) => {
-                        const R = calcular({ lineas: [{ cod: it.cod, cant: 1, tam: "", alt: "", hor: cfg.horarios[0].n, pot: f.n }], ciudad: "", entorno: cfg.entornos[0].n, descuento: 0 }, cfg);
+                        const R = calcular({ lineas: [{ cod: it.cod, cant: 1, tam: cfg.tamanos[0].n, alt: cfg.alturas[0].n, hor: cfg.horarios[0].n, pot: f.n }], ciudad: "", entorno: cfg.entornos[0].n, descuento: 0 }, cfg);
                         const L = R.lines[0];
                         return <td key={f.n} className="px-3 py-2 text-right whitespace-nowrap tabular"><b>{usd(L.mo)}</b><span className="block text-xs text-tinta-3">{hrs(L.h)} · {L.cr.pers} pers.</span></td>;
                       })}

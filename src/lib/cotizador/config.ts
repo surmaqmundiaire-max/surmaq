@@ -14,20 +14,36 @@ export const CONFIG_COT_DEF: ConfigCot = {
   potencias: D.POTENCIAS_DEF,
 };
 
-/** Completa una configuración guardada antes de existir las franjas de potencia, sin perder los cambios del usuario. */
+/** Completa una configuración guardada con lo nuevo (franjas, variadores), sin perder los cambios del usuario. */
 export function migrarConfigCot(cfg?: Partial<ConfigCot>): ConfigCot {
   if (!cfg) return CONFIG_COT_DEF;
   const c = { ...CONFIG_COT_DEF, ...cfg } as ConfigCot;
-  if (cfg.potencias) return c;
   const def = new Map(D.CATALOGO_DEF.map((x) => [x.cod, x]));
   const catalogo = c.catalogo.map((x) => {
     const d = def.get(x.cod);
-    return d?.escala === "potencia" && x.escala === "tamano" ? { ...x, escala: d.escala, pot: d.pot } : x;
+    if (!d) return x;
+    let y = x;
+    if (d.escala === "potencia" && x.escala === "tamano") y = { ...y, escala: d.escala, pot: d.pot };
+    if (d.fam !== x.fam && d.fam === "vfd") y = { ...y, fam: d.fam };
+    return y;
   });
   const cods = new Set(catalogo.map((x) => x.cod));
   const nuevos = D.CATALOGO_DEF.filter((x) => !cods.has(x.cod));
   const cuadrillas = [...c.cuadrillas, ...D.CUADRILLAS_DEF.filter((d) => !c.cuadrillas.some((x) => x.cx === d.cx))];
-  return { ...c, catalogo: [...catalogo, ...nuevos], cuadrillas, potencias: D.POTENCIAS_DEF };
+  const previas = cfg.potencias ?? [];
+  const potencias = [
+    ...previas.map((g) => ({ ...g, u: g.u ?? D.POTENCIAS_DEF.find((d) => d.k === g.k)?.u ?? "HP" })),
+    ...D.POTENCIAS_DEF.filter((d) => !previas.some((g) => g.k === d.k)),
+  ].sort((a, b) => D.POTENCIAS_DEF.findIndex((d) => d.k === a.k) - D.POTENCIAS_DEF.findIndex((d) => d.k === b.k));
+  return { ...c, catalogo: [...catalogo, ...nuevos], cuadrillas, potencias };
+}
+
+/** Caudal en cfm leído de un texto («250 cfm», «7 m³/min»). */
+export function cfmDe(texto: string): number | undefined {
+  const cfm = Number(texto.match(/([\d.,]+)\s*cfm/i)?.[1]?.replace(",", "."));
+  if (cfm) return cfm;
+  const m3 = Number(texto.match(/([\d.,]+)\s*m(?:3|³)\s*\/\s*min/i)?.[1]?.replace(",", "."));
+  return m3 ? Math.round(m3 * 35.31) : undefined;
 }
 
 /** Potencia en HP leída de un texto («20 HP», «15 kW»). */

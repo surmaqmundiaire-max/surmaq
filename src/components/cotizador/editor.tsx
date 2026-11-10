@@ -8,8 +8,9 @@ import { AlertTriangle, CalendarPlus, Check, Copy, FileText, Plus, Save, Search,
 import { useStore } from "@/lib/store";
 import { perfil, puede, tecnicos } from "@/lib/selectors";
 import { calcular, CERTS, tarifas, zona, type Resultado } from "@/lib/cotizador/calculo";
-import { ciudadCotDe, franjaSugerida, hpDe, kmDesdeBase, tamanoSugerido } from "@/lib/cotizador/config";
-import { ESTADOS_COT, equiposCot, trabajosCot, type Cotizacion, type Familia, type LineaCot } from "@/lib/cotizador/tipos";
+import { cfmDe, ciudadCotDe, franjaSugerida, hpDe, kmDesdeBase, tamanoSugerido } from "@/lib/cotizador/config";
+import { AgregarTrabajo, unidadTxt } from "./agregar";
+import { ESTADOS_COT, equiposCot, trabajosCot, type Cotizacion, type GrupoPotencia, type ItemCatalogo, type LineaCot } from "@/lib/cotizador/tipos";
 import { CHECKLISTS } from "@/lib/mock-data";
 import { toLocalIso } from "@/lib/format";
 import type { Perfil, TipoTrabajo } from "@/lib/types";
@@ -83,8 +84,6 @@ export function EditorCotizacion({ id, base, prefill }: { id?: string; base: Bas
       creadoPor: yo.id,
     };
   });
-  const [famSel, setFamSel] = useState<Familia>("mant");
-  const [itemSel, setItemSel] = useState("");
   const [qCli, setQCli] = useState("");
 
   const km = kmDesdeBase(q.base, q.ciudad, cfg);
@@ -104,17 +103,17 @@ export function EditorCotizacion({ id, base, prefill }: { id?: string; base: Bas
     });
   const set = <K extends keyof Borrador>(k: K, v: Borrador[K]) => setQ((x) => ({ ...x, [k]: v }));
   const setLinea = (i: number, c: Partial<LineaCot>) => setQ((x) => ({ ...x, lineas: x.lineas.map((l, j) => (j === i ? { ...l, ...c } : l)) }));
-  const items = cfg.catalogo.filter((x) => x.fam === famSel);
-  const grupos = [...new Set(items.map((x) => x.grupo))];
   const clientesFiltrados = s.clientes.filter((c) => norm(`${c.razonSocial} ${c.ruc}`).includes(norm(qCli))).slice(0, 5);
 
-  const textoEq = (eq?: { nombre: string; datosPlaca?: { potencia?: string } }) => (eq ? `${eq.nombre} ${eq.datosPlaca?.potencia ?? ""}` : "");
-  const potDe = (it: { pot?: string }, eq?: { nombre: string; datosPlaca?: { potencia?: string } }) =>
-    franjaSugerida(cfg.potencias.find((g) => g.k === it.pot), hpDe(textoEq(eq)));
+  type EqPlaca = { nombre: string; datosPlaca?: { potencia?: string; caudal?: string } };
+  const textoEq = (eq?: EqPlaca) => (eq ? `${eq.nombre} ${eq.datosPlaca?.potencia ?? ""}` : "");
+  /** HP o cfm del equipo según la placa (undefined si no se conoce). */
+  const valorEq = (g: GrupoPotencia | undefined, eq?: EqPlaca) => (!eq || !g ? undefined : g.u === "cfm" ? cfmDe(`${eq.nombre} ${eq.datosPlaca?.caudal ?? ""}`) : hpDe(textoEq(eq)));
+  const grupoDe = (it: { pot?: string }) => cfg.potencias.find((g) => g.k === it.pot);
+  const potDe = (it: { pot?: string }, eq?: EqPlaca) => franjaSugerida(grupoDe(it), valorEq(grupoDe(it), eq));
+  const sugerida = (g: GrupoPotencia) => { const v = eqsSel.map((e) => valorEq(g, e)).find(Boolean); return v ? franjaSugerida(g, v) : undefined; };
 
-  const agregar = () => {
-    const it = cfg.catalogo.find((x) => x.cod === (itemSel || items[0]?.cod));
-    if (!it) return;
+  const agregar = (it: ItemCatalogo, franja?: string) => {
     const nueva = (eq?: (typeof eqsSel)[number]): LineaCot => ({
       cod: it.cod,
       cant: it.unidad === "m" ? 10 : 1,
@@ -122,12 +121,12 @@ export function EditorCotizacion({ id, base, prefill }: { id?: string; base: Bas
       alt: cfg.alturas[0].n,
       hor: cfg.horarios[0].n,
       equipoId: eq?.id,
-      ...(it.escala === "potencia" ? { pot: potDe(it, eq) } : {}),
+      ...(it.escala === "potencia" ? { pot: valorEq(grupoDe(it), eq) ? potDe(it, eq) : franja ?? potDe(it) } : {}),
     });
     // Con varios equipos elegidos, la partida se agrega una vez por equipo (cada uno con su tamaño)
     const nuevas = eqsSel.length ? eqsSel.map(nueva) : [nueva()];
     setQ((x) => ({ ...x, lineas: [...x.lineas, ...nuevas] }));
-    if (nuevas.length > 1) aviso(`${it.act}: agregado para ${nuevas.length} equipos`);
+    aviso(nuevas.length > 1 ? `${it.act}: agregado para ${nuevas.length} equipos` : `Agregado: ${it.act}`);
   };
 
   const guardar = (cambios?: Partial<Borrador>) => {
@@ -272,26 +271,7 @@ export function EditorCotizacion({ id, base, prefill }: { id?: string; base: Bas
               <h2 className="font-semibold">Trabajos</h2>
               <span className="text-sm text-tinta-3">{q.lineas.length} partida(s)</span>
             </div>
-            {editable && (
-              <div className="mb-4 space-y-2 rounded-xl bg-fondo p-3">
-                <div role="radiogroup" aria-label="Tipo de servicio" className="grid grid-cols-3 gap-1 rounded-lg bg-superficie p-1">
-                  {([["mant", "Mantenimiento"], ["inst", "Instalación"], ["pint", "Pintura"]] as const).map(([k, l]) => (
-                    <button key={k} type="button" role="radio" aria-checked={famSel === k} onClick={() => { setFamSel(k); setItemSel(""); }} className={cx("min-h-10 rounded-md px-1 text-sm font-semibold", famSel === k ? "bg-marca-800 text-white" : "text-tinta-2")}>
-                      {k === "mant" ? <><span className="@sm:hidden">Mant.</span><span className="hidden @sm:inline">{l}</span></> : l}
-                    </button>
-                  ))}
-                </div>
-                <div className="flex flex-col gap-2 @xl:flex-row">
-                  <label className="min-w-0 flex-1">
-                    <span className="sr-only">Servicio</span>
-                    <select value={itemSel || items[0]?.cod} onChange={(e) => setItemSel(e.target.value)} className={cx(claseCampo, "mt-0")}>
-                      {grupos.map((g) => <optgroup key={g} label={g}>{items.filter((x) => x.grupo === g).map((x) => <option key={x.cod} value={x.cod}>{x.cod} · {x.act}</option>)}</optgroup>)}
-                    </select>
-                  </label>
-                  <button type="button" onClick={agregar} className="inline-flex min-h-12 items-center justify-center gap-1.5 rounded-xl bg-marca-800 px-4 font-semibold text-white"><Plus size={18} /> Agregar{eqsSel.length > 1 ? ` a ${eqsSel.length} equipos` : ""}</button>
-                </div>
-              </div>
-            )}
+            {editable && <AgregarTrabajo cfg={cfg} sugerida={sugerida} nEquipos={eqsSel.length} onAgregar={agregar} />}
             {R.lines.length === 0 ? (
               <div className="rounded-xl border border-dashed border-borde px-4 py-6 text-center text-sm text-tinta-3">
                 <p>Agrega mantenimientos, partidas de instalación o servicios de pintura con el selector de arriba.</p>
@@ -314,7 +294,7 @@ export function EditorCotizacion({ id, base, prefill }: { id?: string; base: Bas
                           <p className="font-semibold">{it.act}</p>
                           <p className="mt-0.5 flex flex-wrap gap-1.5 text-xs text-tinta-2">
                             <span className="rounded bg-fondo px-1.5 py-0.5 font-mono">{it.cod}</span>
-                            <span>{it.grupo}</span>
+                            <span>{it.grupo}{it.escala === "potencia" && <b className="text-tinta"> · {L.escala.n}</b>}</span>
                             <span className={cx("rounded px-1.5 py-0.5", it.tipo === "Instalación" ? "bg-info-bg text-info" : "bg-fondo")}>{it.tipo}</span>
                             {it.cert && <span className="rounded bg-aviso-bg px-1.5 py-0.5 text-aviso">Cert. {it.cert === "electrica" ? "eléctrica" : it.cert}</span>}
                           </p>
@@ -329,7 +309,7 @@ export function EditorCotizacion({ id, base, prefill }: { id?: string; base: Bas
                             <select value={l.equipoId ?? ""} onChange={(e) => {
                               const eq = eqsSel.find((x) => x.id === e.target.value);
                               const tam = eq && it.escala === "tamano" ? tamanoSugerido(textoEq(eq)) : undefined;
-                              const pot = eq && it.escala === "potencia" && hpDe(textoEq(eq)) ? potDe(it, eq) : undefined;
+                              const pot = eq && it.escala === "potencia" && valorEq(grupoDe(it), eq) ? potDe(it, eq) : undefined;
                               setLinea(L.idx, { equipoId: e.target.value || undefined, ...(tam ? { tam } : {}), ...(pot ? { pot } : {}) });
                             }} className={cx(claseCampo, "min-h-10 text-sm")}>
                               <option value="">General (todos los equipos)</option>
@@ -341,7 +321,7 @@ export function EditorCotizacion({ id, base, prefill }: { id?: string; base: Bas
                           <input type="number" min={0} step={1} value={l.cant} onChange={(e) => setLinea(L.idx, { cant: Math.max(0, +e.target.value || 0) })} className={cx(claseCampo, "min-h-10 tabular")} />
                         </label>
                         {it.escala === "potencia" && (
-                          <label className="text-xs text-tinta-2">Potencia
+                          <label className="text-xs text-tinta-2">{unidadTxt(grupoDe(it))}
                             <select value={L.escala.n} onChange={(e) => setLinea(L.idx, { pot: e.target.value })} className={cx(claseCampo, "min-h-10 text-sm")}>
                               {(cfg.potencias.find((g) => g.k === it.pot)?.franjas ?? []).map((a) => <option key={a.n}>{a.n}</option>)}
                             </select>

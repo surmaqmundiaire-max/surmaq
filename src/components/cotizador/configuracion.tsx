@@ -145,14 +145,14 @@ function Parte({ k, cfg }: { k: Tab; cfg: ConfigCot }) {
         <p className="text-sm text-tinta-2">Cada franja multiplica las horas del trabajo y fija la cuadrilla mínima. Un equipo con una potencia entre dos franjas se cotiza con la franja siguiente.</p>
         {gs.map((g, gi) => (
           <div key={g.k}>
-            <h3 className="mb-2 font-semibold">{g.n}</h3>
+            <h3 className="mb-2 font-semibold">{g.n} <span className="text-sm font-normal text-tinta-3">· en {g.u}</span></h3>
             <TablaEditable<FranjaPotencia>
               filas={g.franjas}
               editable
               cols={[
                 { k: "n", label: "Franja", ancho: "130px" },
-                { k: "hpMin", label: "Desde (HP)", tipo: "num", num: true, ancho: "80px" },
-                { k: "hpMax", label: "Hasta (HP)", tipo: "num", num: true, ancho: "80px" },
+                { k: "hpMin", label: `Desde (${g.u})`, tipo: "num", num: true, ancho: "80px" },
+                { k: "hpMax", label: `Hasta (${g.u})`, tipo: "num", num: true, ancho: "80px" },
                 { k: "f", label: "Factor de tiempo", tipo: "num", step: "0.05", num: true, ancho: "80px" },
                 { k: "cx", label: "Cuadrilla mínima", tipo: "select", opciones: cfg.cuadrillas.map((c) => c.cx), ancho: "170px" },
               ]}

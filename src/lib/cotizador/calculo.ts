@@ -50,7 +50,9 @@ export function calcular(q: Pick<Cotizacion, "lineas" | "ciudad" | "entorno" | "
     if (it.escala === "potencia") {
       // La franja de potencia ajusta el tiempo y fija la cuadrilla mínima
       const g = cfg.potencias?.find((x) => x.k === it.pot);
-      const fr = g?.franjas.length ? byName(g.franjas, l.pot ?? "") : undefined;
+      // Cotizaciones antiguas sin franja: se toma la equivalente al tamaño elegido (Pequeño → 1.ª franja…)
+      const iTam = Math.max(0, cfg.tamanos.findIndex((x) => x.n === l.tam));
+      const fr = !g?.franjas.length ? undefined : l.pot ? byName(g.franjas, l.pot) : g.franjas[Math.min(iTam, g.franjas.length - 1)];
       escala = fr ? { n: fr.n, f: fr.f } : { n: "—", f: 1 };
       if (fr?.cx) {
         const c2 = crew(cfg, fr.cx);

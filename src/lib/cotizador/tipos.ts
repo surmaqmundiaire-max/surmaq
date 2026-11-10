@@ -1,6 +1,6 @@
 export type Nivel = "T1" | "T2" | "T3" | "T4" | "T5";
 export type Escala = "tamano" | "altura" | "ninguna" | "potencia";
-export type Familia = "mant" | "inst" | "pint";
+export type Familia = "mant" | "vfd" | "inst" | "pint";
 
 export interface NivelSueldo { cod: string; nombre: string; perfil: string; sueldo: number }
 export interface Costos { SBU: number; IESS_PAT: number; FONDOS: number; HPROD: number; FACTOR: number; niveles: NivelSueldo[] }
@@ -17,7 +17,7 @@ export interface Entorno { n: string; f: number; nota: string }
 export interface ItemCatalogo { cod: string; grupo: string; tipo: string; act: string; alcance: string; intervalo: string; unidad: string; horas: number; cx: string; escala: Escala; fam: Familia; cert: string; /** grupo de franjas de potencia (escala «potencia») */ pot?: string }
 /** Franja de potencia: ajusta el tiempo y fija la cuadrilla mínima según los HP del equipo. */
 export interface FranjaPotencia { n: string; hpMin: number; hpMax: number; f: number; cx: string }
-export interface GrupoPotencia { k: string; n: string; franjas: FranjaPotencia[] }
+export interface GrupoPotencia { k: string; n: string; /** unidad de las franjas: HP (potencia) o cfm (caudal) */ u: "HP" | "cfm"; franjas: FranjaPotencia[] }
 export interface CiudadCot { n: string; prov: string; reg: string; km: number; modo: string }
 
 export interface ConfigCot {
