@@ -9,7 +9,8 @@ export interface Parametros {
   ALIM: number; HOSP: number; R_URB: number; D_REG: number; D_PERN: number; JORNADA: number; JORNADA_MAX: number; HMIN: number;
   PASAJE: number; T_AEREO: number; KM_LOCAL: number; IVA: number; COBRAR_EQ_ALTURA: number;
 }
-export interface Cuadrilla { cx: string; criterio: string; T1: number; T2: number; T3: number; T4: number; T5: number }
+/** Conformación de una cuadrilla: cantidad de técnicos por código de nivel (T1, T2… o los niveles que se agreguen). */
+export interface Cuadrilla { cx: string; criterio: string; [nivel: string]: string | number }
 export interface Factor { n: string; f: number; ref?: string }
 export interface Horario { n: string; rec: number }
 export interface Altura { n: string; f: number; eq: string; costo: number; cert: boolean }
